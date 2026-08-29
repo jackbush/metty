@@ -260,7 +260,7 @@ html,body{
 #play.running{ color: #c9553f; }
 
 /* ── Mobile: vertical thirds ─────────────────────────────── */
-@media (max-width: 760px), (orientation: portrait) and (max-width: 900px){
+@media (max-width: 768px){
   :root{
     --bowl-size: min(70vw, 26vh);
     --dial: min(14vh, 25vw);
@@ -305,4 +305,54 @@ html,body{
   }
   .mini-name{ display: none; }
   .scr-val{ font-size: clamp(1.4rem, 6vh, 3rem); }
+}
+
+/* ── Desktop: square deck ────────────────────────────────────
+   Above 768px the interface is pinned to a square, centred in
+   the viewport with at least 24px clear on every side.
+
+   Interior metrics are re-derived from --side rather than from
+   vw/vh: inside a square container the viewport units no longer
+   describe the box the layout actually lives in, so leaving them
+   would let the deck's proportions drift with window aspect.
+   ───────────────────────────────────────────────────────── */
+@media (min-width: 769px){
+  :root{
+    --side: min(calc(100vw - 48px), calc(100vh - 48px));
+    --pad:        calc(var(--side) * 0.038);
+    --bowl-size:  calc(var(--side) * 0.56);
+    --dial:       calc(var(--side) * 0.15);
+  }
+
+  body{
+    display: grid;
+    place-items: center;
+    background: var(--bg);
+  }
+
+  #deck{
+    width: var(--side);
+    height: var(--side);
+    background: #000;
+    border-radius: 24px;
+    overflow: hidden;
+  }
+
+  #controls{
+    top: calc(var(--pad) + var(--bowl-size) + var(--side) * 0.025);
+    gap: calc(var(--side) * 0.028);
+  }
+
+  /* Type is scaled from --side for the same reason as the metrics:
+     vh-based sizes overflow the fixed-height LCD on a tall window. */
+  #screen{ padding: calc(var(--side) * 0.012) calc(var(--side) * 0.018); }
+  .scr-val{ font-size: calc(var(--side) * 0.033); }
+  .scr-key{ font-size: calc(var(--side) * 0.011); }
+  .scr-status{
+    font-size: calc(var(--side) * 0.010);
+    top: calc(var(--side) * 0.010);
+    right: calc(var(--side) * 0.014);
+  }
+  .group-name, .mini-name{ font-size: calc(var(--side) * 0.0105); }
+  .prog-label{ font-size: calc(var(--side) * 0.0115); }
 }
