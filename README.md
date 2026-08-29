@@ -81,3 +81,19 @@ tasks/           Working notes, todo, lessons.
 
 Interface prototype first. The web prototype is the reference implementation of the
 interaction model — the firmware should behave identically.
+
+## Deploying the prototype
+
+The prototype is static — no build step, no dependencies. It is published to GitHub
+Pages by `.github/workflows/pages.yml`, which uploads **only** `web-prototype/` as the
+site artifact, so the prototype sits at the site root and the planning notes stay in
+the repo without being deployed.
+
+One-time repository setup:
+
+**Settings → Pages → Build and deployment → Source: GitHub Actions**
+
+After that, every push to `main` redeploys to https://jackbush.github.io/metty/
+
+Asset paths in `index.html` are relative, so the page also works unmodified from a
+subpath or straight off the local filesystem.
