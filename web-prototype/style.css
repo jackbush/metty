@@ -1,0 +1,308 @@
+/* ── Metty interface prototype ──────────────────────────────
+   Absolute, full-screen layout. Desktop: bowl top-left, striker
+   down the right, controls in a band underneath the bowl.
+   Mobile: bowl / screen / controls in vertical thirds.
+   ───────────────────────────────────────────────────────── */
+
+:root{
+  --pad: 3.5vh;
+  --bowl-size: min(58vw, 58vh);
+  --dial: min(19vh, 15vw);          /* program dial + play button */
+  --small: calc(var(--dial) * 0.4); /* duration + reps */
+  --gap:   calc(var(--dial) * 0.2); /* so stack height == dial */
+
+  --bg:      #16181a;
+  --bg-lift: #1e2124;
+  --line:    #34393d;
+  --ink:     #cfd4d8;
+  --ink-dim: #767d83;
+  --brass:   #b08a4a;
+  --brass-lo:#6d5528;
+  --lcd:     #97a389;
+  --lcd-ink: #1c2418;
+}
+
+*{ box-sizing: border-box; margin:0; padding:0; }
+[hidden]{ display: none !important; }
+
+html,body{
+  height:100%;
+  overflow:hidden;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#deck{ position: relative; width:100vw; height:100vh; }
+
+/* ── Bowl ────────────────────────────────────────────────── */
+#bowl-zone{
+  position:absolute;
+  top: var(--pad);
+  left: var(--pad);
+  width: var(--bowl-size);
+  height: var(--bowl-size);
+}
+#bowl{
+  position:absolute; inset:0;
+  border-radius:50%;
+  background:
+    radial-gradient(circle at 38% 32%, #4a3d24 0%, #2b2418 45%, #1d1a13 78%, #141310 100%);
+  border:1px solid var(--brass-lo);
+  box-shadow: 0 0 0 1px #0d0e0f, 0 24px 60px -20px #000;
+  transition: box-shadow .12s ease;
+}
+#bowl.hit{
+  box-shadow: 0 0 0 1px #0d0e0f, 0 0 90px -6px rgba(176,138,74,.55), 0 24px 60px -20px #000;
+}
+.ring{
+  position:absolute; border-radius:50%;
+  border:1px solid rgba(176,138,74,.16);
+}
+.r1{ inset:8%; }
+.r2{ inset:20%; border-color: rgba(176,138,74,.12); }
+.r3{ inset:34%; border-color: rgba(176,138,74,.09); }
+#bowl-centre{
+  position:absolute; inset:46%;
+  border-radius:50%;
+  background: radial-gradient(circle at 40% 35%, #6d5528, #241d10);
+  border:1px solid rgba(176,138,74,.3);
+}
+#bowl.hit .ring{ animation: ripple .9s ease-out; }
+@keyframes ripple{
+  0%{ border-color: rgba(176,138,74,.55); }
+  100%{ border-color: rgba(176,138,74,.14); }
+}
+
+/* ── Striker (tonearm) ───────────────────────────────────── */
+#striker{
+  position:absolute;
+  top: var(--pad);
+  right: calc(var(--pad) * 1.6);
+  height: var(--bowl-size);
+  width: 2.2rem;
+  display:flex; flex-direction:column; align-items:center;
+}
+#striker-pivot{
+  width:1.5rem; height:1.5rem; border-radius:50%;
+  background: var(--bg-lift);
+  border:1px solid var(--line);
+  box-shadow: inset 0 0 0 3px var(--bg);
+  flex:none; z-index:2;
+}
+#striker-arm{
+  width:2px; flex:1;
+  background: linear-gradient(180deg, var(--line), #4d5459);
+  transform-origin: top center;
+  transform: rotate(0deg);
+  transition: transform .5s cubic-bezier(.22,.9,.3,1);
+  position:relative;
+}
+#striker.strike #striker-arm{
+  transform: rotate(-11deg);
+  transition: transform .09s cubic-bezier(.3,0,.7,1);
+}
+#striker-head{
+  position:absolute; bottom:-0.35rem; left:50%;
+  transform: translateX(-50%);
+  width:0.7rem; height:1.5rem; border-radius:0.35rem;
+  background: linear-gradient(180deg, #5b6165, var(--brass-lo));
+}
+
+/* ── Controls band ───────────────────────────────────────── */
+#controls{
+  position:absolute;
+  left: var(--pad);
+  right: var(--pad);
+  top: calc(var(--pad) + var(--bowl-size) + 2.5vh);
+  bottom: var(--pad);
+  display:flex;
+  align-items:center;
+  gap: clamp(1rem, 3vw, 3rem);
+}
+.group{ display:flex; flex-direction:column; align-items:center; gap:.55rem; flex:none; }
+.group-name, .mini-name{
+  font-size: clamp(.5rem,.75vw,.66rem);
+  letter-spacing:.18em;
+  color: var(--ink-dim);
+}
+
+/* ── Dials ───────────────────────────────────────────────── */
+.dial{
+  position:relative;
+  border-radius:50%;
+  cursor: grab;
+  touch-action:none;
+  outline:none;
+}
+.dial:active{ cursor: grabbing; }
+.dial:focus-visible .dial-face{ border-color: var(--brass); }
+.dial-face{
+  position:absolute; inset:0;
+  border-radius:50%;
+  background: radial-gradient(circle at 40% 30%, #2c3034, #191c1f 70%);
+  border:1px solid var(--line);
+  box-shadow: 0 6px 18px -8px #000, inset 0 1px 0 rgba(255,255,255,.05);
+}
+.dial-pointer{
+  position:absolute; inset:0;
+  transform: rotate(0deg);
+  pointer-events:none;
+}
+.dial-pointer::before{
+  content:"";
+  position:absolute;
+  left:50%; top:7%;
+  transform: translateX(-50%);
+  width:2px; height:28%;
+  background: var(--brass);
+  border-radius:1px;
+}
+.prog-dial{ width: var(--dial); height: var(--dial); }
+.prog-dial .dial-pointer{ transition: transform .22s cubic-bezier(.3,1.4,.5,1); }
+.small-dial{ width: var(--small); height: var(--small); }
+
+/* Program wrapper + labels around the outside */
+.prog-wrap{
+  position:relative;
+  width: calc(var(--dial) * 1.62);
+  height: calc(var(--dial) * 1.62);
+  display:grid; place-items:center;
+}
+.prog-wrap .prog-dial{ position:absolute; }
+.prog-label{
+  position:absolute;
+  transform: translate(-50%,-50%);
+  font-size: clamp(.5rem,.8vw,.7rem);
+  letter-spacing:.12em;
+  color: var(--ink-dim);
+  cursor:pointer;
+  white-space:nowrap;
+  transition: color .15s ease;
+  user-select:none;
+}
+.prog-label:hover{ color: var(--ink); }
+.prog-label.active{ color: var(--brass); }
+.pos-nw{ left:22%;  top:22%; }
+.pos-ne{ left:78%;  top:22%; }
+.pos-se{ left:78%;  top:78%; }
+.pos-sw{ left:22%;  top:78%; }
+
+/* Stack: two 40% dials, gap 20% → total height == program dial */
+.stack{
+  display:flex; flex-direction:column;
+  gap: var(--gap);
+  height: var(--dial);
+  justify-content:space-between;
+}
+.mini{ display:flex; align-items:center; gap:.5rem; }
+
+/* ── Screen ──────────────────────────────────────────────── */
+#group-screen{ flex:1 1 auto; min-width:0; align-self:stretch; justify-content:center; }
+#screen{
+  width:100%;
+  height: var(--dial);
+  background: var(--lcd);
+  color: var(--lcd-ink);
+  border-radius:3px;
+  border:1px solid #0f1110;
+  box-shadow: inset 0 2px 10px rgba(0,0,0,.35);
+  padding: clamp(.5rem,1.4vh,1rem) clamp(.7rem,1.6vw,1.4rem);
+  display:flex; flex-direction:column; justify-content:center;
+  gap:.15em;
+  position:relative;
+  overflow:hidden;
+}
+.scr-row{
+  display:flex; align-items:baseline; justify-content:space-between;
+  font-variant-numeric: tabular-nums;
+}
+.scr-key{
+  font-size: clamp(.55rem,1.1vh,.8rem);
+  letter-spacing:.22em;
+  opacity:.62;
+}
+.scr-val{
+  font-size: clamp(1rem,3.6vh,2.6rem);
+  font-weight:700;
+  letter-spacing:.06em;
+  line-height:1.05;
+}
+.scr-status{
+  position:absolute; top:.4rem; right:.6rem;
+  display:flex; gap:.7rem;
+  font-size: clamp(.5rem,1vh,.7rem);
+  letter-spacing:.2em;
+  opacity:.62;
+}
+#v-run.on{ opacity:1; font-weight:700; }
+#v-run.blink{ animation: blink 1s steps(1,end) infinite; }
+@keyframes blink{ 50%{ opacity:.15; } }
+
+/* ── Play ────────────────────────────────────────────────── */
+#play{
+  width: var(--dial); height: var(--dial);
+  border-radius:50%;
+  border:1px solid var(--line);
+  background: radial-gradient(circle at 40% 30%, #2c3034, #191c1f 70%);
+  box-shadow: 0 6px 18px -8px #000, inset 0 1px 0 rgba(255,255,255,.05);
+  color: var(--brass);
+  cursor:pointer;
+  display:grid; place-items:center;
+  transition: transform .1s ease, border-color .15s ease;
+}
+#play:hover{ border-color: var(--brass-lo); }
+#play:active{ transform: scale(.97); }
+#play[disabled]{ opacity:.4; cursor:not-allowed; }
+#play svg{ width:42%; height:42%; fill: currentColor; }
+#play.running{ color: #c9553f; }
+
+/* ── Mobile: vertical thirds ─────────────────────────────── */
+@media (max-width: 760px), (orientation: portrait) and (max-width: 900px){
+  :root{
+    --bowl-size: min(70vw, 26vh);
+    --dial: min(14vh, 25vw);
+  }
+
+  /* Top third: bowl + striker */
+  #bowl-zone{
+    top: 3vh;
+    left: 6vw;
+  }
+  #striker{
+    top: 3vh;
+    right: 8vw;
+    height: var(--bowl-size);
+  }
+
+  /* Middle third: screen. Bottom third: controls.
+     Both live inside #controls, laid out as a grid so the screen
+     spans the full width above the control row. */
+  #controls{
+    top: 34vh;
+    bottom: 2.5vh;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: 1fr auto;
+    gap: 3vh 4vw;
+    align-items: center;
+  }
+  #group-screen{
+    grid-column: 1 / -1;
+    grid-row: 1;
+    align-self: stretch;
+  }
+  #screen{ height: 100%; }
+  #group-program{ grid-column: 1; grid-row: 2; justify-self: start; }
+  #group-stack  { grid-column: 2; grid-row: 2; justify-self: center; }
+  #group-play   { grid-column: 3; grid-row: 2; justify-self: end; }
+
+  .prog-wrap{
+    width: calc(var(--dial) * 1.6);
+    height: calc(var(--dial) * 1.6);
+  }
+  .mini-name{ display: none; }
+  .scr-val{ font-size: clamp(1.4rem, 6vh, 3rem); }
+}

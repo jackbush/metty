@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Metty — interface prototype</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<main id="deck">
+
+  <!-- ── Bowl ─────────────────────────────────────────────── -->
+  <div id="bowl-zone">
+    <div id="bowl">
+      <div class="ring r1"></div>
+      <div class="ring r2"></div>
+      <div class="ring r3"></div>
+      <div id="bowl-centre"></div>
+    </div>
+  </div>
+
+  <!-- ── Striker ──────────────────────────────────────────── -->
+  <div id="striker">
+    <div id="striker-pivot"></div>
+    <div id="striker-arm">
+      <div id="striker-head"></div>
+    </div>
+  </div>
+
+  <!-- ── Controls ─────────────────────────────────────────── -->
+  <div id="controls">
+
+    <!-- Program: 4-position selector -->
+    <div class="group" id="group-program">
+      <div class="prog-wrap">
+        <div class="dial prog-dial" id="dial-program" tabindex="0" role="slider"
+             aria-label="Program" aria-valuetext="Off">
+          <div class="dial-face"></div>
+          <div class="dial-pointer"></div>
+        </div>
+        <span class="prog-label pos-nw" data-program="off">OFF</span>
+        <span class="prog-label pos-ne" data-program="metta">METTA</span>
+        <span class="prog-label pos-se" data-program="bodyscan">BODY</span>
+        <span class="prog-label pos-sw" data-program="custom">CUSTOM</span>
+      </div>
+      <span class="group-name">PROGRAM</span>
+    </div>
+
+    <!-- Duration + Repetitions: stacked, 40% diameter -->
+    <div class="group" id="group-stack">
+      <div class="stack">
+        <div class="mini">
+          <div class="dial small-dial" id="dial-duration" tabindex="0" role="slider"
+               aria-label="Segment duration">
+            <div class="dial-face"></div>
+            <div class="dial-pointer"></div>
+          </div>
+          <span class="mini-name">DURATION</span>
+        </div>
+        <div class="mini">
+          <div class="dial small-dial" id="dial-reps" tabindex="0" role="slider"
+               aria-label="Repetitions">
+            <div class="dial-face"></div>
+            <div class="dial-pointer"></div>
+          </div>
+          <span class="mini-name">REPS</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen -->
+    <div class="group" id="group-screen">
+      <div id="screen">
+        <div class="scr-row">
+          <span class="scr-key">SEGMENT</span>
+          <span class="scr-val" id="v-segment">--:--</span>
+        </div>
+        <div class="scr-row">
+          <span class="scr-key">REPS</span>
+          <span class="scr-val" id="v-reps">--</span>
+        </div>
+        <div class="scr-row">
+          <span class="scr-key">TOTAL</span>
+          <span class="scr-val" id="v-total">--:--</span>
+        </div>
+        <div class="scr-status">
+          <span id="v-mode">OFF</span>
+          <span id="v-run"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Play -->
+    <div class="group" id="group-play">
+      <button id="play" aria-label="Start or stop session">
+        <svg viewBox="0 0 100 100" id="play-icon" aria-hidden="true">
+          <polygon id="glyph-play" points="34,24 34,76 78,50"></polygon>
+          <g id="glyph-stop" hidden>
+            <rect x="32" y="30" width="14" height="40"></rect>
+            <rect x="54" y="30" width="14" height="40"></rect>
+          </g>
+        </svg>
+      </button>
+      <span class="group-name">PLAY</span>
+    </div>
+
+  </div>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

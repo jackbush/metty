@@ -1,0 +1,370 @@
+/* ── Metty — interface prototype ───────────────────────────
+   Reference implementation of the interaction model. The
+   Arduino firmware should behave identically to this file.
+   ───────────────────────────────────────────────────────── */
+
+'use strict';
+
+/* ── Model ───────────────────────────────────────────────── */
+
+const STEP = 30;          // duration dial increments, seconds
+const MIN_SEG = 30;       // 0:30
+const MAX_SEG = 99 * 60;  // 99:00
+const MIN_REPS = 1;
+const MAX_REPS = 99;
+
+const PRESETS = {
+  off:      { segment: 0,       reps: 0, name: 'OFF'    },
+  metta:    { segment: 10 * 60, reps: 4, name: 'METTA'  },
+  bodyscan: { segment: 30 * 60, reps: 1, name: 'BODY'   },
+  custom:   { segment: 10 * 60, reps: 1, name: 'CUSTOM' },
+};
+
+const ORDER = ['off', 'metta', 'bodyscan', 'custom'];
+const ANGLE = { off: -45, metta: 45, bodyscan: 135, custom: -135 };
+
+const state = {
+  program: 'off',
+  segment: 0,
+  reps: 0,
+  running: false,
+  startedAt: 0,
+  lastRep: 0,
+};
+
+/* ── Elements ────────────────────────────────────────────── */
+
+const $ = (id) => document.getElementById(id);
+
+const el = {
+  progDial:  $('dial-program'),
+  progPtr:   $('dial-program').querySelector('.dial-pointer'),
+  durDial:   $('dial-duration'),
+  durPtr:    $('dial-duration').querySelector('.dial-pointer'),
+  repDial:   $('dial-reps'),
+  repPtr:    $('dial-reps').querySelector('.dial-pointer'),
+  labels:    Array.from(document.querySelectorAll('.prog-label')),
+  segment:   $('v-segment'),
+  reps:      $('v-reps'),
+  total:     $('v-total'),
+  mode:      $('v-mode'),
+  run:       $('v-run'),
+  play:      $('play'),
+  glyphPlay: $('glyph-play'),
+  glyphStop: $('glyph-stop'),
+  bowl:      $('bowl'),
+  striker:   $('striker'),
+};
+
+/* ── Formatting ──────────────────────────────────────────── */
+
+function mmss(seconds) {
+  const s = Math.max(0, Math.ceil(seconds));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  if (m >= 100) return `${m}m`;
+  return `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+}
+
+/* ── Audio: struck singing bowl ──────────────────────────── */
+
+let ac = null;
+function audio() {
+  if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+  if (ac.state === 'suspended') ac.resume();
+  return ac;
+}
+
+// Inharmonic partials — a bowl is not a harmonic series, which is
+// why a sawtooth or a plain sine never sounds like one.
+const PARTIALS = [
+  { ratio: 1.00,  gain: 1.00, decay: 9.0 },
+  { ratio: 2.76,  gain: 0.42, decay: 6.0 },
+  { ratio: 5.42,  gain: 0.20, decay: 4.0 },
+  { ratio: 8.72,  gain: 0.11, decay: 2.6 },
+  { ratio: 13.10, gain: 0.05, decay: 1.6 },
+];
+
+function strike(delay = 0, vol = 1) {
+  const ctx = audio();
+  const t = ctx.currentTime + delay;
+  const f0 = 328;
+
+  const out = ctx.createGain();
+  out.gain.value = 0.42 * vol;
+  out.connect(ctx.destination);
+
+  for (const p of PARTIALS) {
+    // The fundamental gets a detuned twin so the tone beats slowly
+    // as it decays, the way a real bowl wobbles.
+    const voices = p.ratio === 1 ? [0, 0.6] : [0];
+    for (const detune of voices) {
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = f0 * p.ratio + detune;
+
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(p.gain, t + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + p.decay);
+
+      osc.connect(g).connect(out);
+      osc.start(t);
+      osc.stop(t + p.decay + 0.1);
+    }
+  }
+
+  // Mallet transient — the "tock" of contact, before the tone blooms.
+  const n = ctx.createBufferSource();
+  const buf = ctx.createBuffer(1, ctx.sampleRate * 0.05, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) {
+    data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+  }
+  n.buffer = buf;
+  const bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = 2400;
+  bp.Q.value = 0.8;
+  const ng = ctx.createGain();
+  ng.gain.setValueAtTime(0.28 * vol, t);
+  ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+  n.connect(bp).connect(ng).connect(out);
+  n.start(t);
+  n.stop(t + 0.12);
+
+  animateStrike(delay * 1000);
+}
+
+function animateStrike(delayMs) {
+  setTimeout(() => {
+    el.striker.classList.add('strike');
+    el.bowl.classList.add('hit');
+    setTimeout(() => el.striker.classList.remove('strike'), 110);
+    setTimeout(() => el.bowl.classList.remove('hit'), 900);
+  }, delayMs);
+}
+
+// Three strikes open and close a session; one marks a boundary.
+function tripleStrike() {
+  strike(0);
+  strike(1.7);
+  strike(3.4);
+}
+
+/* ── Rendering ───────────────────────────────────────────── */
+
+function render() {
+  const isOff = state.program === 'off';
+  const total = state.segment * state.reps;
+
+  if (state.running) {
+    const elapsed = (Date.now() - state.startedAt) / 1000;
+    const rep = Math.min(state.reps, Math.floor(elapsed / state.segment) + 1);
+    const segLeft = state.segment - (elapsed % state.segment);
+
+    el.segment.textContent = mmss(segLeft);
+    el.reps.textContent = `${rep}/${state.reps}`;
+    el.total.textContent = mmss(total - elapsed);
+  } else {
+    el.segment.textContent = isOff ? '--:--' : mmss(state.segment);
+    el.reps.textContent = isOff ? '--' : String(state.reps);
+    el.total.textContent = isOff ? '--:--' : mmss(total);
+  }
+
+  el.mode.textContent = PRESETS[state.program].name;
+  el.run.textContent = state.running ? 'RUN' : '';
+  el.run.className = state.running ? 'on blink' : '';
+
+  // Dials
+  el.progPtr.style.transform = `rotate(${ANGLE[state.program]}deg)`;
+  el.labels.forEach((l) =>
+    l.classList.toggle('active', l.dataset.program === state.program));
+  el.progDial.setAttribute('aria-valuetext', PRESETS[state.program].name);
+
+  el.durPtr.style.transform = `rotate(${(state.segment / STEP) * 12}deg)`;
+  el.repPtr.style.transform = `rotate(${state.reps * 24}deg)`;
+
+  // Play
+  el.play.disabled = isOff;
+  el.play.classList.toggle('running', state.running);
+  el.glyphPlay.hidden = state.running;
+  el.glyphStop.hidden = !state.running;
+}
+
+/* ── Program selection ───────────────────────────────────── */
+
+function setProgram(name) {
+  if (state.running) stop(false);
+  state.program = name;
+  // A preset loads starting values; the dials stay live afterwards.
+  state.segment = PRESETS[name].segment;
+  state.reps = PRESETS[name].reps;
+  render();
+}
+
+/* ── Dial input ──────────────────────────────────────────── */
+
+function angleFrom(node, ev) {
+  const r = node.getBoundingClientRect();
+  const dx = ev.clientX - (r.left + r.width / 2);
+  const dy = ev.clientY - (r.top + r.height / 2);
+  return Math.atan2(dx, -dy) * 180 / Math.PI; // 0 = up, clockwise +
+}
+
+function shortest(a) {
+  return ((a + 180) % 360 + 360) % 360 - 180;
+}
+
+/**
+ * Free-spinning encoder. Accumulates rotation and emits a detent
+ * every `degPerStep` degrees — the same behaviour as the rotary
+ * encoder on the hardware, which has no end stops.
+ */
+function freeDial(node, degPerStep, onStep) {
+  let last = null;
+  let acc = 0;
+
+  node.addEventListener('pointerdown', (ev) => {
+    node.setPointerCapture(ev.pointerId);
+    last = angleFrom(node, ev);
+    acc = 0;
+  });
+
+  node.addEventListener('pointermove', (ev) => {
+    if (last === null) return;
+    const now = angleFrom(node, ev);
+    acc += shortest(now - last);
+    last = now;
+    while (Math.abs(acc) >= degPerStep) {
+      const dir = Math.sign(acc);
+      acc -= dir * degPerStep;
+      onStep(dir);
+    }
+  });
+
+  const release = (ev) => {
+    if (last === null) return;
+    last = null;
+    if (node.hasPointerCapture?.(ev.pointerId)) node.releasePointerCapture(ev.pointerId);
+  };
+  node.addEventListener('pointerup', release);
+  node.addEventListener('pointercancel', release);
+
+  node.addEventListener('wheel', (ev) => {
+    ev.preventDefault();
+    onStep(ev.deltaY < 0 ? 1 : -1);
+  }, { passive: false });
+
+  node.addEventListener('keydown', (ev) => {
+    if (ev.key === 'ArrowUp' || ev.key === 'ArrowRight') { onStep(1); ev.preventDefault(); }
+    if (ev.key === 'ArrowDown' || ev.key === 'ArrowLeft') { onStep(-1); ev.preventDefault(); }
+  });
+}
+
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+freeDial(el.durDial, 12, (dir) => {
+  if (state.program === 'off') return;
+  state.segment = clamp(state.segment + dir * STEP, MIN_SEG, MAX_SEG);
+  render();
+});
+
+freeDial(el.repDial, 24, (dir) => {
+  if (state.program === 'off') return;
+  state.reps = clamp(state.reps + dir, MIN_REPS, MAX_REPS);
+  render();
+});
+
+// Program dial: 4 detents, snaps to the nearest position.
+(function programDial() {
+  let dragging = false;
+
+  const pick = (ev) => {
+    const a = angleFrom(el.progDial, ev);
+    let best = ORDER[0], bestD = Infinity;
+    for (const key of ORDER) {
+      const d = Math.abs(shortest(a - ANGLE[key]));
+      if (d < bestD) { bestD = d; best = key; }
+    }
+    if (best !== state.program) setProgram(best);
+  };
+
+  el.progDial.addEventListener('pointerdown', (ev) => {
+    el.progDial.setPointerCapture(ev.pointerId);
+    dragging = true;
+    pick(ev);
+  });
+  el.progDial.addEventListener('pointermove', (ev) => { if (dragging) pick(ev); });
+  el.progDial.addEventListener('pointerup', () => { dragging = false; });
+  el.progDial.addEventListener('pointercancel', () => { dragging = false; });
+
+  el.progDial.addEventListener('keydown', (ev) => {
+    const i = ORDER.indexOf(state.program);
+    if (ev.key === 'ArrowRight' || ev.key === 'ArrowUp') {
+      setProgram(ORDER[(i + 1) % ORDER.length]); ev.preventDefault();
+    }
+    if (ev.key === 'ArrowLeft' || ev.key === 'ArrowDown') {
+      setProgram(ORDER[(i + ORDER.length - 1) % ORDER.length]); ev.preventDefault();
+    }
+  });
+
+  el.labels.forEach((l) =>
+    l.addEventListener('click', () => setProgram(l.dataset.program)));
+})();
+
+/* ── Transport ───────────────────────────────────────────── */
+
+let tick = null;
+
+function start() {
+  if (state.program === 'off' || state.segment <= 0 || state.reps <= 0) return;
+  state.running = true;
+  state.startedAt = Date.now();
+  state.lastRep = 1;
+  tripleStrike();
+  tick = setInterval(update, 100);
+  render();
+}
+
+function stop(closing) {
+  state.running = false;
+  clearInterval(tick);
+  tick = null;
+  if (closing) tripleStrike();
+  render();
+}
+
+function update() {
+  const elapsed = (Date.now() - state.startedAt) / 1000;
+  const total = state.segment * state.reps;
+
+  if (elapsed >= total) {
+    stop(true);
+    return;
+  }
+
+  const rep = Math.floor(elapsed / state.segment) + 1;
+  if (rep > state.lastRep) {
+    state.lastRep = rep;
+    strike(0);           // single strike at a segment boundary
+  }
+
+  render();
+}
+
+el.play.addEventListener('click', () => {
+  audio();               // unlock on the first gesture
+  state.running ? stop(false) : start();
+});
+
+document.addEventListener('keydown', (ev) => {
+  if (ev.code === 'Space' && ev.target === document.body) {
+    ev.preventDefault();
+    el.play.click();
+  }
+});
+
+/* ── Boot ────────────────────────────────────────────────── */
+
+render();
