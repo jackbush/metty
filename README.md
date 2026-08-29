@@ -40,23 +40,34 @@ which on physical hardware reads as a fault, not a design decision.
 ## Controls
 
 - **Program** — 4-position rotary selector, labelled around the outside.
-- **Duration** — free-spinning encoder. Increments in **30-second** units. Sets the
-  **segment** time (the length of one repetition), not the total.
-- **Repetitions** — free-spinning encoder. Multiplies segment time into total time.
+- **Time** — free-spinning encoder. Increments in **30-second** units. Sets the
+  **segment** time (the length of one repeat), not the total.
+- **Repeats** — free-spinning encoder. Multiplies segment time into total time.
 - **Play** — starts and stops the session.
 
 ## Screen
 
-A simple segment display, no backlight. It shows three things:
+A reflective segment display, no backlight, no labels. Two rows:
 
 ```
-SEGMENT   10:00
-REPS          4
-TOTAL     40:00
+  4            40:00     <- top row, 30% height
+        10:00            <- bottom row, 60% height
 ```
 
-While running, the segment field counts down, the reps field shows position
-(`2/4`), and total shows time remaining in the whole session.
+**Bottom row (60%)** is the segment time, and it is the only thing on screen that is
+always present. It counts down while running.
+
+**Top row (30%)** carries the repeats remaining on the far left and the total time
+remaining on the right. It appears only when more than one repeat remains — so a
+single-segment program never shows it, and during a multi-repeat session it goes dark
+as the last repeat begins.
+
+The reasoning: the top row exists to answer "how much more after this one?". On the
+last repeat that question has no answer left, and a row reading `1` is noise. Turning
+it off means a lit top row always means *there is more to come*.
+
+Repeats count **down**, not `2/4`. Mid-sit you want to know what is left, not where you
+are in a sequence.
 
 ## Bell pattern
 

@@ -44,11 +44,10 @@ const el = {
   repDial:   $('dial-reps'),
   repPtr:    $('dial-reps').querySelector('.dial-pointer'),
   labels:    Array.from(document.querySelectorAll('.prog-label')),
-  segment:   $('v-segment'),
-  reps:      $('v-reps'),
-  total:     $('v-total'),
-  mode:      $('v-mode'),
-  run:       $('v-run'),
+  scrTop:    $('scr-top'),
+  dReps:     $('d-reps'),
+  dTotal:    $('d-total'),
+  dSegment:  $('d-segment'),
   play:      $('play'),
   glyphPlay: $('glyph-play'),
   glyphStop: $('glyph-stop'),
@@ -62,8 +61,69 @@ function mmss(seconds) {
   const s = Math.max(0, Math.ceil(seconds));
   const m = Math.floor(s / 60);
   const r = s % 60;
-  if (m >= 100) return `${m}m`;
   return `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+}
+
+/* ── Seven-segment display ───────────────────────────────────
+   Drawn as SVG rather than set in a font, so unlit segments can
+   stay faintly visible the way they do on a real reflective LCD.
+   ───────────────────────────────────────────────────────── */
+
+//    aaa
+//   f   b
+//    ggg
+//   e   c
+//    ddd
+const SEG_RECTS = {
+  a: [13, 0,    32, 11],
+  b: [47, 13,   11, 30],
+  c: [47, 57,   11, 30],
+  d: [13, 89,   32, 11],
+  e: [0,  57,   11, 30],
+  f: [0,  13,   11, 30],
+  g: [13, 44.5, 32, 11],
+};
+
+const SEG_MAP = {
+  '0': 'abcdef', '1': 'bc',     '2': 'abged',  '3': 'abgcd',  '4': 'fgbc',
+  '5': 'afgcd',  '6': 'afgedc', '7': 'abc',    '8': 'abcdefg', '9': 'abgfcd',
+};
+
+const GLYPH_W = 58, GLYPH_H = 100, COLON_W = 22, KERN = 8;
+
+function segSVG(text, lit = true) {
+  const parts = [];
+  let x = 0;
+
+  for (const ch of text) {
+    if (ch === ':') {
+      const on = lit ? ' on' : '';
+      parts.push(`<rect class="seg${on}" x="${x + 6}" y="30" width="11" height="11" rx="3"/>`);
+      parts.push(`<rect class="seg${on}" x="${x + 6}" y="59" width="11" height="11" rx="3"/>`);
+      x += COLON_W + KERN;
+    } else {
+      const on = lit ? (SEG_MAP[ch] || '') : '';
+      for (const key of Object.keys(SEG_RECTS)) {
+        const [rx, ry, rw, rh] = SEG_RECTS[key];
+        const cls = on.includes(key) ? 'seg on' : 'seg';
+        parts.push(`<rect class="${cls}" x="${x + rx}" y="${ry}" width="${rw}" height="${rh}" rx="3"/>`);
+      }
+      x += GLYPH_W + KERN;
+    }
+  }
+
+  const w = Math.max(1, x - KERN);
+  return `<svg viewBox="0 0 ${w} ${GLYPH_H}" preserveAspectRatio="xMidYMid meet">`
+       + parts.join('') + '</svg>';
+}
+
+// Only touch the DOM when the rendered text actually changes.
+const segCache = new WeakMap();
+function setSeg(node, text, lit = true) {
+  const key = text + (lit ? '+' : '-');
+  if (segCache.get(node) === key) return;
+  segCache.set(node, key);
+  node.innerHTML = segSVG(text, lit);
 }
 
 /* ── Audio: struck singing bowl ──────────────────────────── */
@@ -158,23 +218,32 @@ function render() {
   const isOff = state.program === 'off';
   const total = state.segment * state.reps;
 
+  let segText, repsLeft, totalLeft;
+
   if (state.running) {
     const elapsed = (Date.now() - state.startedAt) / 1000;
     const rep = Math.min(state.reps, Math.floor(elapsed / state.segment) + 1);
-    const segLeft = state.segment - (elapsed % state.segment);
-
-    el.segment.textContent = mmss(segLeft);
-    el.reps.textContent = `${rep}/${state.reps}`;
-    el.total.textContent = mmss(total - elapsed);
+    segText  = mmss(state.segment - (elapsed % state.segment));
+    repsLeft = state.reps - rep + 1;   // repeats remaining, including this one
+    totalLeft = total - elapsed;
   } else {
-    el.segment.textContent = isOff ? '--:--' : mmss(state.segment);
-    el.reps.textContent = isOff ? '--' : String(state.reps);
-    el.total.textContent = isOff ? '--:--' : mmss(total);
+    segText  = mmss(state.segment);
+    repsLeft = state.reps;
+    totalLeft = total;
   }
 
-  el.mode.textContent = PRESETS[state.program].name;
-  el.run.textContent = state.running ? 'RUN' : '';
-  el.run.className = state.running ? 'on blink' : '';
+  // Bottom row: segment time. Unlit ghost digits when the deck is off.
+  setSeg(el.dSegment, isOff ? '88:88' : segText, !isOff);
+
+  // Top row carries repeats + total only while more than one repeat
+  // remains. On the last repeat there is nothing left to count, so it
+  // goes dark rather than sitting there reading "1".
+  const showTop = !isOff && repsLeft > 1;
+  el.scrTop.style.visibility = showTop ? 'visible' : 'hidden';
+  if (showTop) {
+    setSeg(el.dReps, String(repsLeft));
+    setSeg(el.dTotal, mmss(totalLeft));
+  }
 
   // Dials
   el.progPtr.style.transform = `rotate(${ANGLE[state.program]}deg)`;

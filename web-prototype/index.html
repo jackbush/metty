@@ -44,49 +44,36 @@
         <span class="prog-label pos-se" data-program="bodyscan">BODY</span>
         <span class="prog-label pos-sw" data-program="custom">CUSTOM</span>
       </div>
-      <span class="group-name">PROGRAM</span>
     </div>
 
-    <!-- Duration + Repetitions: stacked, 40% diameter -->
+    <!-- Time + Repeats. Labels sit between the two dials: the dial
+         each one names is directly above / below it. -->
     <div class="group" id="group-stack">
       <div class="stack">
-        <div class="mini">
-          <div class="dial small-dial" id="dial-duration" tabindex="0" role="slider"
-               aria-label="Segment duration">
-            <div class="dial-face"></div>
-            <div class="dial-pointer"></div>
-          </div>
-          <span class="mini-name">DURATION</span>
+        <div class="dial small-dial" id="dial-duration" tabindex="0" role="slider"
+             aria-label="Segment time">
+          <div class="dial-face"></div>
+          <div class="dial-pointer"></div>
         </div>
-        <div class="mini">
-          <div class="dial small-dial" id="dial-reps" tabindex="0" role="slider"
-               aria-label="Repetitions">
-            <div class="dial-face"></div>
-            <div class="dial-pointer"></div>
-          </div>
-          <span class="mini-name">REPS</span>
+        <span class="mini-name">TIME</span>
+        <span class="mini-name">REPEATS</span>
+        <div class="dial small-dial" id="dial-reps" tabindex="0" role="slider"
+             aria-label="Repeats">
+          <div class="dial-face"></div>
+          <div class="dial-pointer"></div>
         </div>
       </div>
     </div>
 
-    <!-- Screen -->
+    <!-- Screen: top row 30% (repeats remaining + total), bottom row 60% (segment) -->
     <div class="group" id="group-screen">
       <div id="screen">
-        <div class="scr-row">
-          <span class="scr-key">SEGMENT</span>
-          <span class="scr-val" id="v-segment">--:--</span>
+        <div class="scr-top" id="scr-top">
+          <div class="seg-box" id="d-reps"></div>
+          <div class="seg-box" id="d-total"></div>
         </div>
-        <div class="scr-row">
-          <span class="scr-key">REPS</span>
-          <span class="scr-val" id="v-reps">--</span>
-        </div>
-        <div class="scr-row">
-          <span class="scr-key">TOTAL</span>
-          <span class="scr-val" id="v-total">--:--</span>
-        </div>
-        <div class="scr-status">
-          <span id="v-mode">OFF</span>
-          <span id="v-run"></span>
+        <div class="scr-bottom">
+          <div class="seg-box" id="d-segment"></div>
         </div>
       </div>
     </div>
@@ -102,7 +89,6 @@
           </g>
         </svg>
       </button>
-      <span class="group-name">PLAY</span>
     </div>
 
   </div>

@@ -122,7 +122,9 @@ Must match `web-prototype/app.js` exactly. That file is the specification:
   Spacing between strikes in a triple: ~1.7s.
 - A single-segment program has no interior strikes.
 - Stopping early is silent — no closing bell on a manual stop.
-- Display: segment time, reps (`2/4` while running), total remaining.
+- Display, two rows, no labels: bottom row (60% height) is the segment time, always
+  shown. Top row (30%) is repeats remaining on the left, total remaining on the right,
+  and is blanked whenever one repeat or fewer remains.
 
 ## Open questions
 
