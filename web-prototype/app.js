@@ -49,6 +49,7 @@ const el = {
   dTotal:    $('d-total'),
   dSegment:  $('d-segment'),
   play:      $('play'),
+  reset:     $('reset'),
   glyphPlay: $('glyph-play'),
   glyphStop: $('glyph-stop'),
   bowl:      $('bowl'),
@@ -254,9 +255,9 @@ function render() {
   el.durPtr.style.transform = `rotate(${(state.segment / STEP) * 12}deg)`;
   el.repPtr.style.transform = `rotate(${state.reps * 24}deg)`;
 
-  // Play
+  // Transport
   el.play.disabled = isOff;
-  el.play.classList.toggle('running', state.running);
+  el.reset.disabled = isOff;
   el.glyphPlay.hidden = state.running;
   el.glyphStop.hidden = !state.running;
 }
@@ -427,12 +428,40 @@ el.play.addEventListener('click', () => {
   state.running ? stop(false) : start();
 });
 
+// Reset reloads the current program's preset — exactly as if the
+// program dial had been turned away and back again.
+el.reset.addEventListener('click', () => setProgram(state.program));
+
 document.addEventListener('keydown', (ev) => {
   if (ev.code === 'Space' && ev.target === document.body) {
     ev.preventDefault();
     el.play.click();
   }
 });
+
+/* ── Tick rings ──────────────────────────────────────────────
+   Ticks are drawn at the real detent positions, so the ring is a
+   readout of the control's resolution rather than decoration:
+   Both secondary dials carry the same 15-mark ring, landing on real
+   detent positions rather than being decoration.
+   ───────────────────────────────────────────────────────── */
+
+function addTicks(dial, angles) {
+  const host = dial.querySelector('.ticks');
+  if (!host) return;
+  for (const a of angles) {
+    const t = document.createElement('div');
+    t.className = 'tick';
+    t.style.transform = `rotate(${a}deg)`;
+    host.appendChild(t);
+  }
+}
+
+const evenly = (n) => Array.from({ length: n }, (_, i) => (i * 360) / n);
+
+addTicks(el.progDial, ORDER.map((k) => ANGLE[k]));
+addTicks(el.durDial, evenly(15));
+addTicks(el.repDial, evenly(15));
 
 /* ── Boot ────────────────────────────────────────────────── */
 

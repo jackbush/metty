@@ -44,6 +44,30 @@ which on physical hardware reads as a fault, not a design decision.
   **segment** time (the length of one repeat), not the total.
 - **Repeats** — free-spinning encoder. Multiplies segment time into total time.
 - **Play** — starts and stops the session.
+- **Reset** — reloads the current program's preset, stopping any session in progress.
+
+### Duration and Repeats
+
+Both are the same size and carry the same 15-mark tick ring, landing on real detent
+positions rather than being decoration. Duration sets the segment length in 30-second
+steps; Repeats multiplies it. Their labels sit between them with a label's height of
+clear air, so each reads as belonging to the control it touches.
+
+## Reset
+
+A second button under Play. It reloads the current program's preset — exactly as if the
+program dial had been turned away and back again — and stops the session if one is
+running. Both Play and Reset are dead when the program is Off.
+
+## Aesthetic
+
+Braun, after Rams: black ground, white geometry, no gradients and no drop shadows.
+Depth is carried by line weight and spacing alone. Helvetica, uppercase, wide tracking
+for the few labels that survive — the program positions, and Time and Repeats. Nothing
+else is labelled, because nothing else needs to be.
+
+The screen is the one light surface on the device, which is the point: it is the only
+thing you read.
 
 ## Screen
 

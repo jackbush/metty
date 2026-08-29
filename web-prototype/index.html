@@ -37,6 +37,7 @@
         <div class="dial prog-dial" id="dial-program" tabindex="0" role="slider"
              aria-label="Program" aria-valuetext="Off">
           <div class="dial-face"></div>
+          <div class="ticks"></div>
           <div class="dial-pointer"></div>
         </div>
         <span class="prog-label pos-nw" data-program="off">OFF</span>
@@ -51,15 +52,17 @@
     <div class="group" id="group-stack">
       <div class="stack">
         <div class="dial small-dial" id="dial-duration" tabindex="0" role="slider"
-             aria-label="Segment time">
+             aria-label="Segment duration">
           <div class="dial-face"></div>
+          <div class="ticks"></div>
           <div class="dial-pointer"></div>
         </div>
-        <span class="mini-name">TIME</span>
+        <span class="mini-name">DURATION</span>
         <span class="mini-name">REPEATS</span>
         <div class="dial small-dial" id="dial-reps" tabindex="0" role="slider"
              aria-label="Repeats">
           <div class="dial-face"></div>
+          <div class="ticks"></div>
           <div class="dial-pointer"></div>
         </div>
       </div>
@@ -80,15 +83,25 @@
 
     <!-- Play -->
     <div class="group" id="group-play">
-      <button id="play" aria-label="Start or stop session">
-        <svg viewBox="0 0 100 100" id="play-icon" aria-hidden="true">
-          <polygon id="glyph-play" points="34,24 34,76 78,50"></polygon>
-          <g id="glyph-stop" hidden>
-            <rect x="32" y="30" width="14" height="40"></rect>
-            <rect x="54" y="30" width="14" height="40"></rect>
-          </g>
-        </svg>
-      </button>
+      <div class="stack">
+        <button class="btn" id="play" aria-label="Start or stop session">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <polygon id="glyph-play" points="34,24 34,76 78,50"></polygon>
+            <g id="glyph-stop" hidden>
+              <rect x="32" y="30" width="14" height="40"></rect>
+              <rect x="54" y="30" width="14" height="40"></rect>
+            </g>
+          </svg>
+        </button>
+        <span class="mini-name">PLAY</span>
+        <span class="mini-name">RESET</span>
+        <button class="btn" id="reset" aria-label="Reset to program preset">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <rect x="28" y="28" width="8" height="44"></rect>
+            <polygon points="72,28 72,72 42,50"></polygon>
+          </svg>
+        </button>
+      </div>
     </div>
 
   </div>

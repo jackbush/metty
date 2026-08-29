@@ -23,7 +23,8 @@ physical parts.
  [4-pos rotary switch] ──┐
  [encoder: duration]  ───┤
  [encoder: reps]      ───┼──> [ MCU ] ──> [ HT1621 segment LCD ]
- [play button]        ───┘        │
+ [play button]        ───┤        │
+ [reset button]       ───┘        │
                                   └────> [ MOSFET ] ──> [ solenoid striker ]
 
  [12V in] ──> [buck 5V] ──> logic
@@ -38,12 +39,13 @@ physical parts.
 |---|---|---|
 | MCU | Arduino Nano Every, or ESP32 dev board | See "pin pressure" below — this is the main open decision. |
 | Program selector | SP4T rotary switch, detented | Resistor ladder into one ADC pin. Real detents matter for feel. |
-| Duration encoder | EC11 rotary encoder, detented, no end stop | Free-spinning, matching the prototype. |
-| Reps encoder | EC11 rotary encoder, detented | Same. |
+| Duration encoder | EC11 rotary encoder, detented, no end stop | Free-spinning. Knob ~40% of the program knob. |
+| Repeats encoder | EC11 rotary encoder, detented | Same part, same knob size. |
+| Play button | 16mm momentary, panel mount | Debounced in firmware. |
+| Reset button | 16mm momentary, panel mount | Reloads the program preset; stops a running session. |
 | Display | HT1621 6-digit reflective LCD | 3-wire, no backlight, low power. |
 | Striker | 12V push solenoid (e.g. JF-0530B) + felt/leather mallet tip | Flyback diode **mandatory**. |
 | Driver | Logic-level N-MOSFET (IRLZ44N) + 1N4007 flyback | Plus 1000µF bulk cap on the solenoid rail. |
-| Play button | 16mm momentary, panel mount | Debounced in firmware. |
 | Power | 12V 2A supply + buck converter to 5V | Solenoid inrush must not brown out the MCU. |
 | Bowl | Tibetan singing bowl, ~12–15cm | Pitch and sustain vary hugely — buy by ear. |
 | Cradle | Felt ring or three O-ring standoffs | **Critical:** see mechanical notes. |
