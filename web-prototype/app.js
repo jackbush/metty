@@ -383,6 +383,35 @@ freeDial(el.repDial, 24, (dir) => {
     l.addEventListener('click', () => setProgram(l.dataset.program)));
 })();
 
+/* ── Wake lock ───────────────────────────────────────────────
+   A meditation runs for minutes with nothing touching the screen,
+   so the phone would dim and sleep mid-session and take the bowl
+   with it. Hold a screen wake lock while a session is running, and
+   re-take it when the tab comes back to the foreground — the
+   browser drops the lock whenever the page is hidden.
+   ───────────────────────────────────────────────────────── */
+
+let wakeLock = null;
+
+async function acquireWakeLock() {
+  if (!('wakeLock' in navigator) || wakeLock) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch {
+    wakeLock = null;   // denied, or the tab lost focus mid-request
+  }
+}
+
+function releaseWakeLock() {
+  wakeLock?.release().catch(() => {});
+  wakeLock = null;
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (state.running && document.visibilityState === 'visible') acquireWakeLock();
+});
+
 /* ── Transport ───────────────────────────────────────────── */
 
 let tick = null;
@@ -392,6 +421,7 @@ function start() {
   state.running = true;
   state.startedAt = Date.now();
   state.lastRep = 1;
+  acquireWakeLock();
   tripleStrike();
   tick = setInterval(update, 100);
   render();
@@ -401,6 +431,7 @@ function stop(closing) {
   state.running = false;
   clearInterval(tick);
   tick = null;
+  releaseWakeLock();
   if (closing) tripleStrike();
   render();
 }
