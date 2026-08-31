@@ -40,27 +40,54 @@
           <div class="ticks"></div>
           <div class="dial-pointer"></div>
         </div>
-        <span class="prog-label pos-nw" data-program="off">OFF</span>
-        <span class="prog-label pos-ne" data-program="metta">METTA</span>
-        <span class="prog-label pos-se" data-program="bodyscan">BODY</span>
-        <span class="prog-label pos-sw" data-program="custom">CUSTOM</span>
+        <span class="prog-name">PROGRAM</span>
+        <span class="prog-label pos-nw" data-program="off" aria-label="Off">
+          <svg class="ico" viewBox="0 0 256 256" aria-hidden="true">
+            <line x1="128" y1="48" x2="128" y2="124"></line>
+            <path d="M176,54.2A88,88,0,1,1,80,54.2"></path>
+          </svg>
+        </span>
+        <span class="prog-label pos-ne" data-program="metta" aria-label="Metta">
+          <svg class="ico" viewBox="0 0 256 256" aria-hidden="true">
+            <circle cx="128" cy="128" r="96"></circle>
+            <line x1="128" y1="32" x2="128" y2="224"></line>
+            <line x1="128" y1="128" x2="60" y2="196"></line>
+            <line x1="128" y1="128" x2="196" y2="196"></line>
+          </svg>
+        </span>
+        <span class="prog-label pos-se" data-program="bodyscan" aria-label="Body scan">
+          <svg class="ico" viewBox="0 0 256 256" aria-hidden="true">
+            <circle cx="128" cy="52" r="26"></circle>
+            <path d="M72,152,128,104l56,48"></path>
+            <path d="M128,104v56"></path>
+            <path d="M94,224l34,-64l34,64"></path>
+          </svg>
+        </span>
+        <span class="prog-label pos-sw" data-program="custom" aria-label="Custom">
+          <svg class="ico" viewBox="0 0 256 256" aria-hidden="true">
+            <circle cx="128" cy="144" r="80"></circle>
+            <line x1="104" y1="24" x2="152" y2="24"></line>
+            <line x1="128" y1="24" x2="128" y2="64"></line>
+            <line x1="128" y1="144" x2="160" y2="112"></line>
+          </svg>
+        </span>
       </div>
     </div>
 
-    <!-- Time + Repeats. Labels sit between the two dials: the dial
-         each one names is directly above / below it. -->
+    <!-- Repeats + Length. Each label is centred directly above the
+         dial it names; length is the bigger of the two. -->
     <div class="group" id="group-stack">
       <div class="stack">
-        <div class="dial small-dial" id="dial-duration" tabindex="0" role="slider"
-             aria-label="Segment duration">
+        <span class="mini-name">REPEATS</span>
+        <div class="dial reps-dial" id="dial-reps" tabindex="0" role="slider"
+             aria-label="Repeats">
           <div class="dial-face"></div>
           <div class="ticks"></div>
           <div class="dial-pointer"></div>
         </div>
-        <span class="mini-name">DURATION</span>
-        <span class="mini-name">REPEATS</span>
-        <div class="dial small-dial" id="dial-reps" tabindex="0" role="slider"
-             aria-label="Repeats">
+        <span class="mini-name">LENGTH</span>
+        <div class="dial length-dial" id="dial-duration" tabindex="0" role="slider"
+             aria-label="Segment length">
           <div class="dial-face"></div>
           <div class="ticks"></div>
           <div class="dial-pointer"></div>
@@ -83,7 +110,7 @@
 
     <!-- Play -->
     <div class="group" id="group-play">
-      <div class="stack">
+      <div class="stack stack-play">
         <button class="btn" id="play" aria-label="Start or stop session">
           <svg viewBox="0 0 100 100" aria-hidden="true">
             <polygon id="glyph-play" points="34,24 34,76 78,50"></polygon>
@@ -91,14 +118,6 @@
               <rect x="32" y="30" width="14" height="40"></rect>
               <rect x="54" y="30" width="14" height="40"></rect>
             </g>
-          </svg>
-        </button>
-        <span class="mini-name">PLAY</span>
-        <span class="mini-name">RESET</span>
-        <button class="btn" id="reset" aria-label="Reset to program preset">
-          <svg viewBox="0 0 100 100" aria-hidden="true">
-            <rect x="28" y="28" width="8" height="44"></rect>
-            <polygon points="72,28 72,72 42,50"></polygon>
           </svg>
         </button>
       </div>

@@ -8,11 +8,20 @@
 :root{
   --pad: 3.5vh;
   --bowl-size: min(58vw, 58vh);
-  --dial: min(24.7vh, 19.5vw);           /* program dial == screen == play */
+  --dial: min(24.7vh, 19.5vw);           /* program dial == screen height */
 
-  /* One size for the secondary controls: the two dials and the two
-     buttons. It also sets the bowl's clearance from the panel. */
-  --small: calc(var(--dial) * 0.40);
+  /* Clear air between the bowl and the top of the control panel. */
+  --clearance: calc(var(--dial) * 0.40);
+
+  /* The two secondary dials. Their stack is the height of the display
+     beside them, and the first label hangs above it, so what the pair
+     has to share is one --dial less the label that sits between them
+     and its two gaps (1.8em above + 1em tall + 1.2em below). Splitting
+     that budget rather than sizing each dial on its own is what keeps
+     repeats on the display's top edge and length on its bottom one. */
+  --dial-pair:   calc(var(--dial) - var(--label) * 4);
+  --dial-reps:   calc(var(--dial-pair) * 0.35);
+  --dial-length: calc(var(--dial-pair) * 0.65);
 
   --page:  #171716;
   --deck:  #000;
@@ -22,6 +31,11 @@
   --hair:  #5a5a5a;
   --lcd:     #d7d8d0;
   --lcd-ink: #0d0f0c;
+
+  /* Label type. Held as variables so the gaps around a label can be
+     stated as multiples of its own size. */
+  --label:  clamp(.5rem,.72vw,.62rem);
+  --plabel: clamp(.5rem,.75vw,.64rem);
 }
 
 *{ box-sizing: border-box; margin:0; padding:0; }
@@ -119,7 +133,7 @@ html,body{
 }
 .group{ display:flex; flex-direction:column; align-items:center; flex:none; }
 .mini-name{
-  font-size: clamp(.5rem,.72vw,.62rem);
+  font-size: var(--label);
   letter-spacing:.2em;
   font-weight:500;
   color: var(--grey);
@@ -175,7 +189,8 @@ html,body{
 
 .prog-dial{ width: var(--dial); height: var(--dial); }
 .prog-dial .dial-pointer{ transition: transform .22s cubic-bezier(.3,1.4,.5,1); }
-.small-dial{ width: var(--small); height: var(--small); }
+.length-dial{ width: var(--dial-length); height: var(--dial-length); }
+.reps-dial{ width: var(--dial-reps); height: var(--dial-reps); }
 
 /* Program wrapper + labels around the outside */
 .prog-wrap{
@@ -188,7 +203,7 @@ html,body{
 .prog-label{
   position:absolute;
   transform: translate(-50%,-50%);
-  font-size: clamp(.5rem,.75vw,.64rem);
+  font-size: var(--plabel);
   letter-spacing:.16em;
   font-weight:500;
   color: var(--dim);
@@ -204,16 +219,47 @@ html,body{
 .pos-se{ left:80%;  top:80%; }
 .pos-sw{ left:20%;  top:80%; }
 
-/* Stack: time / TIME / REPEATS / repeats, total height == program dial */
+/* Phosphor-geometry icons: 256 grid, 16 stroke, round ends. They take
+   the label's colour, so they light up with selection like the words. */
+.prog-label .ico{
+  display:block;
+  width:1.9em; height:1.9em;
+  fill:none;
+  stroke: currentColor;
+  stroke-width:16;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+/* The dial's own name, centred above it like every other label.
+   83.33% is the dial's top edge inside the 1.5x wrapper. */
+.prog-name{
+  position:absolute;
+  left:50%; bottom: calc(83.333% + var(--label) * 1.2);
+  transform: translateX(-50%);
+  font-size: var(--label);
+  letter-spacing:.2em;
+  font-weight:500;
+  color: var(--grey);
+  line-height:1;
+  white-space:nowrap;
+}
+
+/* Stack: DURATION / dial / REPEATS / dial. Every label is centred
+   above the dial it names — 1.2 label-heights above its own dial, and
+   1.8 below the unrelated dial before it, so each pair reads as one. */
 .stack{
   display:flex; flex-direction:column;
   align-items:center;
   height: var(--dial);
-  justify-content: space-between;
+  justify-content: flex-start;
 }
-/* One label's height of clear air between the two labels, so each
-   reads as belonging to the control it touches. */
-.stack .mini-name:first-of-type{ margin-bottom: 1.15em; }
+.stack .mini-name{ margin-bottom: calc(var(--label) * 1.2); }
+.stack .dial + .mini-name{ margin-top: calc(var(--label) * 1.8); }
+/* The stack box is the screen's box, so the first dial's top edge meets
+   the top of the display; its label hangs in the air above the line. */
+.stack .mini-name:first-child{ margin-top: calc(var(--label) * -2.2); }
+.stack-play{ justify-content: flex-end; }
 
 /* ── Screen ──────────────────────────────────────────────── */
 #group-screen{ flex:1 1 auto; min-width:0; }
@@ -234,12 +280,11 @@ html,body{
 }
 .scr-bottom{
   height:60%;
-  display:flex; align-items:center; justify-content:center;
+  display:flex; align-items:center; justify-content:flex-end;
 }
 .seg-box{ height:100%; min-width:0; }
 .scr-top .seg-box svg{ height:100%; width:auto; max-width:100%; display:block; }
-.scr-bottom .seg-box{ width:100%; }
-.scr-bottom .seg-box svg{ height:100%; width:100%; display:block; }
+.scr-bottom .seg-box svg{ height:100%; width:auto; max-width:100%; display:block; }
 
 /* Unlit segments stay faintly visible, as on a real reflective LCD */
 .seg{ fill: currentColor; opacity:.07; }
@@ -247,7 +292,8 @@ html,body{
 
 /* ── Play ────────────────────────────────────────────────── */
 .btn{
-  width: var(--small); height: var(--small);
+  /* Matched to the repeats dial, the smallest of the round controls. */
+  width: var(--dial-reps); height: var(--dial-reps);
   border-radius:50%;
   border:1px solid var(--hair);
   background: transparent;
@@ -305,9 +351,9 @@ html,body{
   :root{
     --side: min(calc(100vw - 48px), calc(100vh - 48px));
     --pad:        calc(var(--side) * 0.038);
-    /* As large as will fit while keeping one small-dial diameter of
-       clear space between the bowl and the top of the control panel. */
-    --bowl-size:  calc(var(--side) - (var(--pad) * 2) - var(--dial) - var(--small));
+    /* As large as will fit while keeping --clearance of clear space
+       between the bowl and the top of the control panel. */
+    --bowl-size:  calc(var(--side) - (var(--pad) * 2) - var(--dial) - var(--clearance));
     --dial:       calc(var(--side) * 0.195);
   }
 
@@ -327,10 +373,37 @@ html,body{
     top: auto;
     bottom: calc(var(--pad) - var(--dial) * 0.25);
     height: calc(var(--dial) * 1.5);
-    gap: calc(var(--side) * 0.022);
+    gap: var(--band-gap);
+  }
+
+  /* Line the program dial's rim up with the left edge of the bowl above:
+     its label wrapper is a quarter-dial wider on that side. */
+  #group-program{ margin-left: calc(var(--dial) * -0.25); }
+
+  /* The dials belong to the program selector, not the display: pull them
+     left so the air on their program side is the smaller of the two. The
+     matched right margin keeps the play button on its padding line. */
+  #group-stack{
+    margin-left:  calc(var(--shift) * -1);
+    margin-right: var(--shift);
+  }
+  /* The display sits so that the play button has the same air on both
+     sides: --pad to the deck's edge on its right, the same to the display
+     on its left. The two margins add up to the same total as before, so
+     the display keeps its width and shifts rather than stretching, and
+     the space it leaves behind widens the gap back to the dials. */
+  #group-screen{
+    margin-left:  calc(var(--shift) - var(--pad) + var(--band-gap));
+    margin-right: calc(var(--pad) - var(--band-gap));
   }
 
   /* Type scaled from --side for the same reason as the metrics. */
-  .mini-name{ font-size: calc(var(--side) * 0.0098); }
-  .prog-label{ font-size: calc(var(--side) * 0.0105); }
+  :root{
+    --label:  calc(var(--side) * 0.0098);
+    --plabel: calc(var(--side) * 0.0105);
+    /* The band's own gap between neighbours, and the extra added to it
+       around the display. */
+    --band-gap: calc(var(--side) * 0.022);
+    --shift:    calc(var(--side) * 0.036);
+  }
 }

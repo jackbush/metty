@@ -7,8 +7,8 @@
 
 /* ── Model ───────────────────────────────────────────────── */
 
-const STEP = 30;          // duration dial increments, seconds
-const MIN_SEG = 30;       // 0:30
+const STEP = 60;          // length dial increments, seconds — one minute
+const MIN_SEG = 60;       // 1:00
 const MAX_SEG = 99 * 60;  // 99:00
 const MIN_REPS = 1;
 const MAX_REPS = 99;
@@ -49,7 +49,6 @@ const el = {
   dTotal:    $('d-total'),
   dSegment:  $('d-segment'),
   play:      $('play'),
-  reset:     $('reset'),
   glyphPlay: $('glyph-play'),
   glyphStop: $('glyph-stop'),
   bowl:      $('bowl'),
@@ -252,12 +251,13 @@ function render() {
     l.classList.toggle('active', l.dataset.program === state.program));
   el.progDial.setAttribute('aria-valuetext', PRESETS[state.program].name);
 
-  el.durPtr.style.transform = `rotate(${(state.segment / STEP) * 12}deg)`;
-  el.repPtr.style.transform = `rotate(${state.reps * 24}deg)`;
+  el.durPtr.style.transform = `rotate(${(state.segment / STEP) * 6}deg)`;
+  // Position 1 is 12 o'clock and each repeat is one notch clockwise;
+  // with no program loaded there is no count, so the pointer rests at 1.
+  el.repPtr.style.transform = `rotate(${Math.max(0, state.reps - 1) * 60}deg)`;
 
   // Transport
   el.play.disabled = isOff;
-  el.reset.disabled = isOff;
   el.glyphPlay.hidden = state.running;
   el.glyphStop.hidden = !state.running;
 }
@@ -334,13 +334,13 @@ function freeDial(node, degPerStep, onStep) {
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
-freeDial(el.durDial, 12, (dir) => {
+freeDial(el.durDial, 6, (dir) => {
   if (state.program === 'off') return;
   state.segment = clamp(state.segment + dir * STEP, MIN_SEG, MAX_SEG);
   render();
 });
 
-freeDial(el.repDial, 24, (dir) => {
+freeDial(el.repDial, 60, (dir) => {
   if (state.program === 'off') return;
   state.reps = clamp(state.reps + dir, MIN_REPS, MAX_REPS);
   render();
@@ -459,10 +459,6 @@ el.play.addEventListener('click', () => {
   state.running ? stop(false) : start();
 });
 
-// Reset reloads the current program's preset — exactly as if the
-// program dial had been turned away and back again.
-el.reset.addEventListener('click', () => setProgram(state.program));
-
 document.addEventListener('keydown', (ev) => {
   if (ev.code === 'Space' && ev.target === document.body) {
     ev.preventDefault();
@@ -473,8 +469,10 @@ document.addEventListener('keydown', (ev) => {
 /* ── Tick rings ──────────────────────────────────────────────
    Ticks are drawn at the real detent positions, so the ring is a
    readout of the control's resolution rather than decoration:
-   Both secondary dials carry the same 15-mark ring, landing on real
-   detent positions rather than being decoration.
+   Length is indexed like a clock: 12 marks to the turn, one per five
+   minutes, so a full revolution is an hour. Repeats is a counted ring of
+   6, one mark per step. Both start at 12 o'clock and run clockwise, and
+   both land on real detent positions rather than being decoration.
    ───────────────────────────────────────────────────────── */
 
 function addTicks(dial, angles) {
@@ -491,8 +489,8 @@ function addTicks(dial, angles) {
 const evenly = (n) => Array.from({ length: n }, (_, i) => (i * 360) / n);
 
 addTicks(el.progDial, ORDER.map((k) => ANGLE[k]));
-addTicks(el.durDial, evenly(15));
-addTicks(el.repDial, evenly(15));
+addTicks(el.durDial, evenly(12));
+addTicks(el.repDial, evenly(6));
 
 /* ── Boot ────────────────────────────────────────────────── */
 
