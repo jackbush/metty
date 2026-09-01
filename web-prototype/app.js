@@ -15,8 +15,8 @@ const MAX_REPS = 99;
 
 const PRESETS = {
   off:      { segment: 0,       reps: 0, name: 'OFF'    },
-  metta:    { segment: 10 * 60, reps: 4, name: 'METTA'  },
-  bodyscan: { segment: 30 * 60, reps: 1, name: 'BODY'   },
+  metta:    { segment: 10 * 60, reps: 4, name: 'Mettā Bhāvanā' },
+  bodyscan: { segment:  5 * 60, reps: 4, name: 'Ānāpānasati'  },
   custom:   { segment: 10 * 60, reps: 1, name: 'CUSTOM' },
 };
 
