@@ -2,7 +2,7 @@
    Braun-style: black ground, white geometry, no gradients and
    no shadows. Depth is carried by line weight and spacing only.
    Desktop (>768px): pinned to a centred square deck.
-   Mobile: bowl / screen / controls in vertical thirds.
+   Mobile: bowl above; display and control band at the bottom.
    ───────────────────────────────────────────────────────── */
 
 :root{
@@ -254,11 +254,12 @@ html,body{
   height: var(--dial);
   justify-content: flex-start;
 }
-.stack .mini-name{ margin-bottom: calc(var(--label) * 1.2); }
-.stack .dial + .mini-name{ margin-top: calc(var(--label) * 1.8); }
+.pair{ display:flex; flex-direction:column; align-items:center; }
+.pair .mini-name{ margin-bottom: calc(var(--label) * 1.2); }
+.pair + .pair{ margin-top: calc(var(--label) * 1.8); }
 /* The stack box is the screen's box, so the first dial's top edge meets
    the top of the display; its label hangs in the air above the line. */
-.stack .mini-name:first-child{ margin-top: calc(var(--label) * -2.2); }
+.stack > .pair:first-child .mini-name{ margin-top: calc(var(--label) * -2.2); }
 .stack-play{ justify-content: flex-end; }
 
 /* ── Screen ──────────────────────────────────────────────── */
@@ -292,50 +293,110 @@ html,body{
 
 /* ── Play ────────────────────────────────────────────────── */
 .btn{
-  /* Matched to the stages dial, the smallest of the round controls. */
+  /* Matched to the stages dial, the smallest of the round controls.
+     The one filled control on the deck: white face, black glyph. */
   width: var(--dial-stages); height: var(--dial-stages);
   border-radius:50%;
-  border:1px solid var(--hair);
-  background: transparent;
-  color: var(--white);
+  border:1px solid var(--white);
+  background: var(--white);
+  color: var(--deck);
   cursor:pointer;
   display:grid; place-items:center;
   flex:none;
-  transition: border-color .15s ease;
+  transition: opacity .15s ease;
 }
-.btn:hover:not([disabled]){ border-color: var(--white); }
+.btn:hover:not([disabled]){ opacity:.85; }
 .btn[disabled]{ opacity:.35; cursor:not-allowed; }
 .btn svg{ width:38%; height:38%; fill: currentColor; }
 
-/* ── Mobile: vertical thirds ─────────────────────────────── */
+/* ── Mobile: bowl above, then display and control band ───────
+   The display and the band below it are both --band tall and both
+   anchored to the bottom edge; the bowl takes whatever is left.
+   The band is one row — program, time, stages, play — with a fixed
+   24px gutter; the dials take whatever width is left over.
+   ───────────────────────────────────────────────────────── */
 @media (max-width: 768px){
   :root{
-    --bowl-size: min(70vw, 26vh);
-    --dial: min(15vh, 27vw);
+    --band: 160px;
+    --edge: 6vw;
+    --gutter: 24px;
+    --play: 48px;
+    /* The three dials take whatever the play button and the gutters
+       leave: the program wrapper is 1.5 dials wide, the other two are
+       one each, so the row is 3.5 dials plus the fixed parts. */
+    --ctl: min(
+      calc((100vw - var(--edge) * 2 - var(--play) - var(--gutter) * 3) / 3.5),
+      calc(var(--band) * 0.6)
+    );
+    --dial: var(--ctl);
+    --dial-time: var(--ctl);
+    --dial-stages: var(--ctl);
+    --label:  .55rem;
+    --plabel: .55rem;
+    /* Whatever the two bottom bands leave. */
+    --bowl-size: min(70vw, calc(100vh - var(--band) * 2 - 8vh));
   }
 
-  #bowl-zone{ top: 3vh; left: 6vw; }
-  #striker{ top: 3vh; right: 8vw; height: var(--bowl-size); }
+  #bowl-zone{ top: 3vh; left: var(--edge); }
+  #striker{ top: 3vh; right: var(--edge); height: var(--bowl-size); }
 
   #controls{
-    top: 34vh;
-    bottom: 2.5vh;
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    grid-template-rows: 1fr auto;
-    gap: 3vh 4vw;
+    top: auto;
+    left: 0; right: 0;
+    bottom: 0;
+    height: var(--band);
+    padding: 0 var(--edge);
+    display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: var(--gutter);
   }
-  #group-screen{ grid-column: 1 / -1; grid-row: 1; align-self: stretch; }
+
+  /* The stack is a desktop arrangement: on mobile its two dials join
+     the band as columns of their own. */
+  #group-stack, .stack{ display: contents; }
+  .pair + .pair{ margin-top: 0; }
+  /* Each label is lifted out of the flow so a column's box is its dial
+     alone: with the boxes centred in the band, every dial lands on the
+     same centre line whether or not it is named. PROGRAM already floats
+     this way inside its wrapper, at the same height above the rim. */
+  .pair{ position: relative; }
+  .pair .mini-name{
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + var(--label) * 1.4);
+    transform: translateX(-50%);
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  /* TIME comes after STAGES in the DOM; the band reads left to right. */
+  #group-program{ order: 1; }
+  #pair-time   { order: 2; }
+  #pair-stages { order: 3; }
+  #group-play  { order: 4; }
+
+  /* The play button keeps a fixed 48px and sits on the dials' bottom
+     line: everything is centred in the band, so dropping it by half
+     the difference in size puts the two bottom edges together. */
+  .btn{ width: var(--play); height: var(--play); }
+  #group-play{ margin-top: calc(var(--ctl) - var(--play)); }
+
+  /* The display rides directly on top of the band, same height. */
+  #group-screen{
+    position: absolute;
+    left: var(--edge); right: var(--edge);
+    bottom: 100%;
+    height: var(--band);
+  }
   #screen{ height: 100%; }
-  #group-program{ grid-column: 1; grid-row: 2; justify-self: start; }
-  #group-stack  { grid-column: 2; grid-row: 2; justify-self: center; }
-  #group-play   { grid-column: 3; grid-row: 2; justify-self: end; }
 
   .prog-wrap{
     width: calc(var(--dial) * 1.5);
     height: calc(var(--dial) * 1.5);
   }
+  /* PROGRAM sits on the same line as the other three labels. */
+  .prog-name{ bottom: calc(83.333% + var(--label) * 1.4); }
 }
 
 /* ── Desktop: square deck ────────────────────────────────────
