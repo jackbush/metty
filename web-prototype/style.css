@@ -51,7 +51,18 @@ html,body{
   -webkit-tap-highlight-color: transparent;
 }
 
-#deck{ position: relative; width:100vw; height:100vh; background: var(--deck); }
+/* dvh, not vh: on phones 100vh is the *large* viewport — it excludes the
+   URL bar and bottom toolbar. The mobile layout is anchored to the deck's
+   bottom edge, so a vh-tall deck puts the control band underneath the
+   browser chrome, where it is unreadable and untappable. vh first as the
+   fallback for browsers without dvh. */
+#deck{
+  position: relative;
+  width:100vw;
+  height:100vh;
+  height:100dvh;
+  background: var(--deck);
+}
 
 /* ── Bowl ────────────────────────────────────────────────── */
 #bowl-zone{
@@ -315,9 +326,14 @@ html,body{
    The band is one row — program, time, stages, play — with a fixed
    24px gutter; the dials take whatever width is left over.
    ───────────────────────────────────────────────────────── */
-@media (max-width: 768px){
+/* Width OR height: a phone in landscape is wider than 768px but far too
+   short for the square deck, which would otherwise squeeze the controls
+   down to 14px. Either dimension being small means the stacked layout. */
+@media (max-width: 768px), (max-height: 600px){
   :root{
-    --band: 160px;
+    /* Two bands stacked at the bottom. Capped in dvh so a short viewport
+     shrinks them rather than squeezing the bowl above out of existence. */
+  --band: min(160px, 26dvh);
     --edge: 6vw;
     --gutter: 24px;
     --play: 48px;
@@ -334,16 +350,19 @@ html,body{
     --label:  .55rem;
     --plabel: .55rem;
     /* Whatever the two bottom bands leave. */
-    --bowl-size: min(70vw, calc(100vh - var(--band) * 2 - 8vh));
+    --bowl-size: max(0px, min(70vw, calc(100dvh - var(--band) * 2 - 8dvh)));
   }
 
-  #bowl-zone{ top: 3vh; left: var(--edge); }
-  #striker{ top: 3vh; right: var(--edge); height: var(--bowl-size); }
+  #bowl-zone{ top: 3dvh; left: var(--edge); }
+  #striker{ top: 3dvh; right: var(--edge); height: var(--bowl-size); }
 
   #controls{
     top: auto;
     left: 0; right: 0;
-    bottom: 0;
+    /* Clear the iOS home indicator when the page is rendered edge to edge;
+       0 everywhere else. The screen rides on `bottom: 100%` of this box, so
+       it follows the band up. */
+    bottom: env(safe-area-inset-bottom, 0px);
     height: var(--band);
     padding: 0 var(--edge);
     display: flex;
@@ -399,6 +418,13 @@ html,body{
   .prog-name{ bottom: calc(83.333% + var(--label) * 1.4); }
 }
 
+/* Narrowest phones: at 320px the four columns and three 24px gutters add
+   up to the whole viewport with nothing to spare, so the play button sits
+   on the clipping edge. Tightening the gutter buys the row its slack back. */
+@media (max-width: 380px){
+  :root{ --gutter: 16px; }
+}
+
 /* ── Desktop: square deck ────────────────────────────────────
    Above 768px the interface is pinned to a square, centred in
    the viewport with at least 24px clear on every side.
@@ -408,7 +434,7 @@ html,body{
    describe the box the layout actually lives in, so leaving them
    would let the deck's proportions drift with window aspect.
    ───────────────────────────────────────────────────────── */
-@media (min-width: 769px){
+@media (min-width: 769px) and (min-height: 601px){
   :root{
     --side: min(calc(100vw - 48px), calc(100vh - 48px));
     --pad:        calc(var(--side) * 0.038);
