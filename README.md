@@ -11,7 +11,7 @@ The program dial has four positions.
 | Position | Segment | Stages | Total |
 |---|---|---|---|
 | **Off** | — | — | — |
-| **Mettā Bhāvanā** | 10:00 | 4 | 40:00 |
+| **Mettā Bhāvanā** | 8:00 | 5 | 40:00 |
 | **Ānāpānasati** | 5:00 | 4 | 20:00 |
 | **Custom** | 10:00 | 1 | 10:00 |
 

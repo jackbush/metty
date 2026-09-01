@@ -34,7 +34,7 @@ Play and Reset are dead when the program is Off.
 ### Presets are starting values, not locks
 
 Selecting a program loads a segment time and stage count; it does not freeze them. The
-dials stay live in every mode — spin duration to 12:00 in Mettā and you get 12:00 × 4.
+dials stay live in every mode — spin duration to 12:00 in Mettā and you get 12:00 × 5.
 This keeps the firmware to a single state model and avoids two of the four program
 positions having dead controls, which on physical hardware reads as a fault rather than
 a design decision.
@@ -44,8 +44,8 @@ a design decision.
 A reflective segment display, no backlight, no labels. Two rows:
 
 ```
-  4            40:00     <- top row, 30% height
-        10:00            <- bottom row, 60% height
+  5            40:00     <- top row, 30% height
+         8:00            <- bottom row, 60% height
 ```
 
 **Bottom row (60%)** is the segment time, the only thing always present. It counts down
@@ -81,10 +81,3 @@ GitHub Actions. Every push to `main` then redeploys to https://jackbush.github.i
 
 Asset paths in `index.html` are relative, so the page also works from a subpath or
 straight off the local filesystem.
-
-## Open question
-
-`PRESETS.metta` in `web-prototype/app.js` runs **4** stages, but the Mettā Bhāvanā as
-practised has **five** (self, friend, neutral, difficult, all four together and
-radiating outward). The README table currently documents the code, not the practice.
-Worth resolving.

@@ -15,7 +15,7 @@ const MAX_STAGES = 99;
 
 const PRESETS = {
   off:      { segment: 0,       stages: 0, name: 'OFF'    },
-  metta:    { segment: 10 * 60, stages: 4, name: 'Mettā Bhāvanā' },
+  metta:    { segment:  8 * 60, stages: 5, name: 'Mettā Bhāvanā' },
   bodyscan: { segment:  5 * 60, stages: 4, name: 'Ānāpānasati'  },
   custom:   { segment: 10 * 60, stages: 1, name: 'CUSTOM' },
 };
