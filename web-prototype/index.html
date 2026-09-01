@@ -70,20 +70,20 @@
       </div>
     </div>
 
-    <!-- Repeats + Length. Each label is centred directly above the
-         dial it names; length is the bigger of the two. -->
+    <!-- Stages + Time. Each label is centred directly above the
+         dial it names; time is the bigger of the two. -->
     <div class="group" id="group-stack">
       <div class="stack">
-        <span class="mini-name">REPEATS</span>
-        <div class="dial reps-dial" id="dial-reps" tabindex="0" role="slider"
-             aria-label="Repeats">
+        <span class="mini-name">STAGES</span>
+        <div class="dial stages-dial" id="dial-stages" tabindex="0" role="slider"
+             aria-label="Stages">
           <div class="dial-face"></div>
           <div class="ticks"></div>
           <div class="dial-pointer"></div>
         </div>
-        <span class="mini-name">LENGTH</span>
-        <div class="dial length-dial" id="dial-duration" tabindex="0" role="slider"
-             aria-label="Segment length">
+        <span class="mini-name">TIME</span>
+        <div class="dial time-dial" id="dial-time" tabindex="0" role="slider"
+             aria-label="Segment time">
           <div class="dial-face"></div>
           <div class="ticks"></div>
           <div class="dial-pointer"></div>
@@ -91,11 +91,11 @@
       </div>
     </div>
 
-    <!-- Screen: top row 30% (repeats remaining + total), bottom row 60% (segment) -->
+    <!-- Screen: top row 30% (stages remaining + total), bottom row 60% (segment) -->
     <div class="group" id="group-screen">
       <div id="screen">
         <div class="scr-top" id="scr-top">
-          <div class="seg-box" id="d-reps"></div>
+          <div class="seg-box" id="d-stages"></div>
           <div class="seg-box" id="d-total"></div>
         </div>
         <div class="scr-bottom">
@@ -109,11 +109,9 @@
       <div class="stack stack-play">
         <button class="btn" id="play" aria-label="Start or stop session">
           <svg viewBox="0 0 100 100" aria-hidden="true">
-            <polygon id="glyph-play" points="34,24 34,76 78,50"></polygon>
-            <g id="glyph-stop" hidden>
-              <rect x="32" y="30" width="14" height="40"></rect>
-              <rect x="54" y="30" width="14" height="40"></rect>
-            </g>
+            <!-- One fixed glyph: the hardware button is a single
+                 momentary switch and cannot change its face. -->
+            <polygon points="34,24 34,76 78,50"></polygon>
           </svg>
         </button>
       </div>

@@ -7,17 +7,17 @@
 
 /* ── Model ───────────────────────────────────────────────── */
 
-const STEP = 60;          // length dial increments, seconds — one minute
+const STEP = 60;          // time dial increments, seconds — one minute
 const MIN_SEG = 60;       // 1:00
 const MAX_SEG = 99 * 60;  // 99:00
-const MIN_REPS = 1;
-const MAX_REPS = 99;
+const MIN_STAGES = 1;
+const MAX_STAGES = 99;
 
 const PRESETS = {
-  off:      { segment: 0,       reps: 0, name: 'OFF'    },
-  metta:    { segment: 10 * 60, reps: 4, name: 'Mettā Bhāvanā' },
-  bodyscan: { segment:  5 * 60, reps: 4, name: 'Ānāpānasati'  },
-  custom:   { segment: 10 * 60, reps: 1, name: 'CUSTOM' },
+  off:      { segment: 0,       stages: 0, name: 'OFF'    },
+  metta:    { segment: 10 * 60, stages: 4, name: 'Mettā Bhāvanā' },
+  bodyscan: { segment:  5 * 60, stages: 4, name: 'Ānāpānasati'  },
+  custom:   { segment: 10 * 60, stages: 1, name: 'CUSTOM' },
 };
 
 const ORDER = ['off', 'metta', 'bodyscan', 'custom'];
@@ -26,10 +26,11 @@ const ANGLE = { off: -45, metta: 45, bodyscan: 135, custom: -135 };
 const state = {
   program: 'off',
   segment: 0,
-  reps: 0,
+  stages: 0,
   running: false,
+  countdown: 0,       // seconds left on the pre-roll, 0 when not counting
   startedAt: 0,
-  lastRep: 0,
+  lastStage: 0,
 };
 
 /* ── Elements ────────────────────────────────────────────── */
@@ -39,18 +40,16 @@ const $ = (id) => document.getElementById(id);
 const el = {
   progDial:  $('dial-program'),
   progPtr:   $('dial-program').querySelector('.dial-pointer'),
-  durDial:   $('dial-duration'),
-  durPtr:    $('dial-duration').querySelector('.dial-pointer'),
-  repDial:   $('dial-reps'),
-  repPtr:    $('dial-reps').querySelector('.dial-pointer'),
+  timeDial:  $('dial-time'),
+  timePtr:   $('dial-time').querySelector('.dial-pointer'),
+  stageDial:   $('dial-stages'),
+  stagePtr:    $('dial-stages').querySelector('.dial-pointer'),
   labels:    Array.from(document.querySelectorAll('.prog-label')),
   scrTop:    $('scr-top'),
-  dReps:     $('d-reps'),
+  dStages:     $('d-stages'),
   dTotal:    $('d-total'),
   dSegment:  $('d-segment'),
   play:      $('play'),
-  glyphPlay: $('glyph-play'),
-  glyphStop: $('glyph-stop'),
   bowl:      $('bowl'),
   striker:   $('striker'),
 };
@@ -91,21 +90,29 @@ const SEG_MAP = {
 
 const GLYPH_W = 58, GLYPH_H = 100, COLON_W = 22, KERN = 8;
 
+/**
+ * `lit` is either a boolean for the whole string, or a mask string of
+ * '1'/'0' the same length as the text — used by the pre-roll, which
+ * lights one digit and leaves the rest as unlit ghosts.
+ */
 function segSVG(text, lit = true) {
   const parts = [];
   let x = 0;
+  let i = -1;
 
   for (const ch of text) {
+    i++;
+    const on = typeof lit === 'string' ? lit[i] === '1' : lit;
     if (ch === ':') {
-      const on = lit ? ' on' : '';
-      parts.push(`<rect class="seg${on}" x="${x + 6}" y="30" width="11" height="11" rx="3"/>`);
-      parts.push(`<rect class="seg${on}" x="${x + 6}" y="59" width="11" height="11" rx="3"/>`);
+      const c = on ? ' on' : '';
+      parts.push(`<rect class="seg${c}" x="${x + 6}" y="30" width="11" height="11" rx="3"/>`);
+      parts.push(`<rect class="seg${c}" x="${x + 6}" y="59" width="11" height="11" rx="3"/>`);
       x += COLON_W + KERN;
     } else {
-      const on = lit ? (SEG_MAP[ch] || '') : '';
+      const segs = on ? (SEG_MAP[ch] || '') : '';
       for (const key of Object.keys(SEG_RECTS)) {
         const [rx, ry, rw, rh] = SEG_RECTS[key];
-        const cls = on.includes(key) ? 'seg on' : 'seg';
+        const cls = segs.includes(key) ? 'seg on' : 'seg';
         parts.push(`<rect class="${cls}" x="${x + rx}" y="${ry}" width="${rw}" height="${rh}" rx="3"/>`);
       }
       x += GLYPH_W + KERN;
@@ -120,7 +127,7 @@ function segSVG(text, lit = true) {
 // Only touch the DOM when the rendered text actually changes.
 const segCache = new WeakMap();
 function setSeg(node, text, lit = true) {
-  const key = text + (lit ? '+' : '-');
+  const key = text + '|' + lit;
   if (segCache.get(node) === key) return;
   segCache.set(node, key);
   node.innerHTML = segSVG(text, lit);
@@ -216,32 +223,38 @@ function tripleStrike() {
 
 function render() {
   const isOff = state.program === 'off';
-  const total = state.segment * state.reps;
+  const counting = state.countdown > 0;
+  const total = state.segment * state.stages;
 
-  let segText, repsLeft, totalLeft;
+  let segText, stagesLeft, totalLeft;
 
   if (state.running) {
     const elapsed = (Date.now() - state.startedAt) / 1000;
-    const rep = Math.min(state.reps, Math.floor(elapsed / state.segment) + 1);
+    const stage = Math.min(state.stages, Math.floor(elapsed / state.segment) + 1);
     segText  = mmss(state.segment - (elapsed % state.segment));
-    repsLeft = state.reps - rep + 1;   // repeats remaining, including this one
+    stagesLeft = state.stages - stage + 1;   // stages remaining, including this one
     totalLeft = total - elapsed;
   } else {
     segText  = mmss(state.segment);
-    repsLeft = state.reps;
+    stagesLeft = state.stages;
     totalLeft = total;
   }
 
   // Bottom row: segment time. Unlit ghost digits when the deck is off.
-  setSeg(el.dSegment, isOff ? '88:88' : segText, !isOff);
+  // During the pre-roll only the last digit lights, counting 5 down to 1.
+  if (counting) {
+    setSeg(el.dSegment, `88:8${state.countdown}`, '00001');
+  } else {
+    setSeg(el.dSegment, isOff ? '88:88' : segText, !isOff);
+  }
 
-  // Top row carries repeats + total only while more than one repeat
-  // remains. On the last repeat there is nothing left to count, so it
+  // Top row carries stages + total only while more than one stage
+  // remains. On the last stage there is nothing left to count, so it
   // goes dark rather than sitting there reading "1".
-  const showTop = !isOff && repsLeft > 1;
+  const showTop = !isOff && !counting && stagesLeft > 1;
   el.scrTop.style.visibility = showTop ? 'visible' : 'hidden';
   if (showTop) {
-    setSeg(el.dReps, String(repsLeft));
+    setSeg(el.dStages, String(stagesLeft));
     setSeg(el.dTotal, mmss(totalLeft));
   }
 
@@ -251,25 +264,24 @@ function render() {
     l.classList.toggle('active', l.dataset.program === state.program));
   el.progDial.setAttribute('aria-valuetext', PRESETS[state.program].name);
 
-  el.durPtr.style.transform = `rotate(${(state.segment / STEP) * 6}deg)`;
-  // Position 1 is 12 o'clock and each repeat is one notch clockwise;
+  el.timePtr.style.transform = `rotate(${(state.segment / STEP) * 6}deg)`;
+  // Position 1 is 12 o'clock and each stage is one notch clockwise;
   // with no program loaded there is no count, so the pointer rests at 1.
-  el.repPtr.style.transform = `rotate(${Math.max(0, state.reps - 1) * 60}deg)`;
+  el.stagePtr.style.transform = `rotate(${Math.max(0, state.stages - 1) * 60}deg)`;
 
   // Transport
   el.play.disabled = isOff;
-  el.glyphPlay.hidden = state.running;
-  el.glyphStop.hidden = !state.running;
 }
 
 /* ── Program selection ───────────────────────────────────── */
 
 function setProgram(name) {
+  cancelCountdown();
   if (state.running) stop(false);
   state.program = name;
   // A preset loads starting values; the dials stay live afterwards.
   state.segment = PRESETS[name].segment;
-  state.reps = PRESETS[name].reps;
+  state.stages = PRESETS[name].stages;
   render();
 }
 
@@ -334,15 +346,15 @@ function freeDial(node, degPerStep, onStep) {
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
-freeDial(el.durDial, 6, (dir) => {
+freeDial(el.timeDial, 6, (dir) => {
   if (state.program === 'off') return;
   state.segment = clamp(state.segment + dir * STEP, MIN_SEG, MAX_SEG);
   render();
 });
 
-freeDial(el.repDial, 60, (dir) => {
+freeDial(el.stageDial, 60, (dir) => {
   if (state.program === 'off') return;
-  state.reps = clamp(state.reps + dir, MIN_REPS, MAX_REPS);
+  state.stages = clamp(state.stages + dir, MIN_STAGES, MAX_STAGES);
   render();
 });
 
@@ -415,12 +427,33 @@ document.addEventListener('visibilitychange', () => {
 /* ── Transport ───────────────────────────────────────────── */
 
 let tick = null;
+let preroll = null;
+
+// Five seconds of settling before the bells: the last digit of the
+// clock counts 5,4,3,2,1, then the session starts on zero.
+function beginCountdown() {
+  if (state.program === 'off' || state.segment <= 0 || state.stages <= 0) return;
+  const t0 = Date.now();
+  state.countdown = 5;
+  render();
+  preroll = setInterval(() => {
+    const left = 5 - Math.floor((Date.now() - t0) / 1000);
+    if (left <= 0) { cancelCountdown(); start(); return; }
+    if (left !== state.countdown) { state.countdown = left; render(); }
+  }, 100);
+}
+
+function cancelCountdown() {
+  clearInterval(preroll);
+  preroll = null;
+  state.countdown = 0;
+}
 
 function start() {
-  if (state.program === 'off' || state.segment <= 0 || state.reps <= 0) return;
+  if (state.program === 'off' || state.segment <= 0 || state.stages <= 0) return;
   state.running = true;
   state.startedAt = Date.now();
-  state.lastRep = 1;
+  state.lastStage = 1;
   acquireWakeLock();
   tripleStrike();
   tick = setInterval(update, 100);
@@ -438,16 +471,16 @@ function stop(closing) {
 
 function update() {
   const elapsed = (Date.now() - state.startedAt) / 1000;
-  const total = state.segment * state.reps;
+  const total = state.segment * state.stages;
 
   if (elapsed >= total) {
     stop(true);
     return;
   }
 
-  const rep = Math.floor(elapsed / state.segment) + 1;
-  if (rep > state.lastRep) {
-    state.lastRep = rep;
+  const stage = Math.floor(elapsed / state.segment) + 1;
+  if (stage > state.lastStage) {
+    state.lastStage = stage;
     strike(0);           // single strike at a segment boundary
   }
 
@@ -456,7 +489,9 @@ function update() {
 
 el.play.addEventListener('click', () => {
   audio();               // unlock on the first gesture
-  state.running ? stop(false) : start();
+  if (state.running) { stop(false); return; }
+  if (state.countdown > 0) { cancelCountdown(); render(); return; }
+  beginCountdown();
 });
 
 document.addEventListener('keydown', (ev) => {
@@ -469,8 +504,8 @@ document.addEventListener('keydown', (ev) => {
 /* ── Tick rings ──────────────────────────────────────────────
    Ticks are drawn at the real detent positions, so the ring is a
    readout of the control's resolution rather than decoration:
-   Length is indexed like a clock: 12 marks to the turn, one per five
-   minutes, so a full revolution is an hour. Repeats is a counted ring of
+   Time is indexed like a clock: 12 marks to the turn, one per five
+   minutes, so a full revolution is an hour. Stages is a counted ring of
    6, one mark per step. Both start at 12 o'clock and run clockwise, and
    both land on real detent positions rather than being decoration.
    ───────────────────────────────────────────────────────── */
@@ -489,8 +524,8 @@ function addTicks(dial, angles) {
 const evenly = (n) => Array.from({ length: n }, (_, i) => (i * 360) / n);
 
 addTicks(el.progDial, ORDER.map((k) => ANGLE[k]));
-addTicks(el.durDial, evenly(12));
-addTicks(el.repDial, evenly(6));
+addTicks(el.timeDial, evenly(12));
+addTicks(el.stageDial, evenly(6));
 
 /* ── Boot ────────────────────────────────────────────────── */
 

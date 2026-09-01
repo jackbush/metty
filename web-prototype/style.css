@@ -18,10 +18,10 @@
      has to share is one --dial less the label that sits between them
      and its two gaps (1.8em above + 1em tall + 1.2em below). Splitting
      that budget rather than sizing each dial on its own is what keeps
-     repeats on the display's top edge and length on its bottom one. */
+     stages on the display's top edge and time on its bottom one. */
   --dial-pair:   calc(var(--dial) - var(--label) * 4);
-  --dial-reps:   calc(var(--dial-pair) * 0.35);
-  --dial-length: calc(var(--dial-pair) * 0.65);
+  --dial-stages:   calc(var(--dial-pair) * 0.35);
+  --dial-time:   calc(var(--dial-pair) * 0.65);
 
   --page:  #171716;
   --deck:  #000;
@@ -189,8 +189,8 @@ html,body{
 
 .prog-dial{ width: var(--dial); height: var(--dial); }
 .prog-dial .dial-pointer{ transition: transform .22s cubic-bezier(.3,1.4,.5,1); }
-.length-dial{ width: var(--dial-length); height: var(--dial-length); }
-.reps-dial{ width: var(--dial-reps); height: var(--dial-reps); }
+.time-dial{ width: var(--dial-time); height: var(--dial-time); }
+.stages-dial{ width: var(--dial-stages); height: var(--dial-stages); }
 
 /* Program wrapper + labels around the outside */
 .prog-wrap{
@@ -245,7 +245,7 @@ html,body{
   white-space:nowrap;
 }
 
-/* Stack: DURATION / dial / REPEATS / dial. Every label is centred
+/* Stack: TIME / dial / STAGES / dial. Every label is centred
    above the dial it names — 1.2 label-heights above its own dial, and
    1.8 below the unrelated dial before it, so each pair reads as one. */
 .stack{
@@ -292,8 +292,8 @@ html,body{
 
 /* ── Play ────────────────────────────────────────────────── */
 .btn{
-  /* Matched to the repeats dial, the smallest of the round controls. */
-  width: var(--dial-reps); height: var(--dial-reps);
+  /* Matched to the stages dial, the smallest of the round controls. */
+  width: var(--dial-stages); height: var(--dial-stages);
   border-radius:50%;
   border:1px solid var(--hair);
   background: transparent;
