@@ -302,6 +302,15 @@ html,body{
 .seg{ fill: currentColor; opacity:.07; }
 .seg.on{ opacity:1; }
 
+/* Two hard inversions of the whole display — the only acknowledgement
+   the device gives that a preset has been written. No glow, no fade:
+   a reflective LCD either reflects or it doesn't. */
+#screen.pulse{ animation: lcd-pulse .48s steps(1, end) 2; }
+@keyframes lcd-pulse{
+  0%,  100%{ background: var(--lcd);     color: var(--lcd-ink); }
+  50%      { background: var(--lcd-ink); color: var(--lcd);     }
+}
+
 /* ── Play ────────────────────────────────────────────────── */
 .btn{
   /* Matched to the stages dial, the smallest of the round controls.
@@ -315,6 +324,11 @@ html,body{
   display:grid; place-items:center;
   flex:none;
   transition: opacity .15s ease;
+  /* Held for three seconds to store a preset — the touch callout and
+     selection that a long press would otherwise raise are in the way. */
+  touch-action:manipulation;
+  user-select:none;
+  -webkit-touch-callout:none;
 }
 .btn:hover:not([disabled]){ opacity:.85; }
 .btn[disabled]{ opacity:.35; cursor:not-allowed; }

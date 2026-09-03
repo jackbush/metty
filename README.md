@@ -17,6 +17,8 @@ The program dial has four positions.
 
 A preset loads a segment time and stage count; it does not lock them. The duration and repeats dials stay live in every mode, so Custom is simply the unopinionated position — any length or number of stages.
 
+A preset can be updated by choosing it, changing it, then pressing Play and holding for 3s. The display will flash and the preset will default to the new settings for you.
+
 ## The two Triratna practices
 
 The first two modes follow the practices as taught in the Triratna Buddhist tradition.

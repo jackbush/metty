@@ -23,6 +23,59 @@ const PRESETS = {
 const ORDER = ['off', 'metta', 'bodyscan', 'custom'];
 const ANGLE = { off: -45, metta: 45, bodyscan: 135, custom: -135 };
 
+/* ── Editable presets ────────────────────────────────────────
+   A preset is a starting value, and on the hardware it is also
+   re-writable: dial in what you actually sit, hold Play for three
+   seconds, and the program position keeps it. Off is not a program
+   and has nothing to store. On the device this is EEPROM; here it is
+   localStorage, read once at boot and merged over the factory table.
+   ───────────────────────────────────────────────────────── */
+
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+const STORE_KEY = 'metty.presets.v1';
+const HOLD_MS = 3000;
+
+function loadPresets() {
+  let saved;
+  try {
+    saved = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+  } catch {
+    return;               // corrupt or unavailable — the factory table stands
+  }
+  if (!saved || typeof saved !== 'object') return;
+
+  for (const name of ORDER) {
+    if (name === 'off') continue;
+    const p = saved[name];
+    if (!p) continue;
+    const segment = Math.round(Number(p.segment) / STEP) * STEP;
+    const stages = Math.round(Number(p.stages));
+    if (!Number.isFinite(segment) || !Number.isFinite(stages)) continue;
+    PRESETS[name].segment = clamp(segment, MIN_SEG, MAX_SEG);
+    PRESETS[name].stages = clamp(stages, MIN_STAGES, MAX_STAGES);
+  }
+}
+
+function savePreset() {
+  const name = state.program;
+  if (name === 'off') return false;
+  PRESETS[name].segment = state.segment;
+  PRESETS[name].stages = state.stages;
+  try {
+    const out = {};
+    for (const key of ORDER) {
+      if (key === 'off') continue;
+      out[key] = { segment: PRESETS[key].segment, stages: PRESETS[key].stages };
+    }
+    localStorage.setItem(STORE_KEY, JSON.stringify(out));
+  } catch {
+    // Private mode, or storage full. The preset still holds for this
+    // session; there is nowhere to say so on a two-row display.
+  }
+  return true;
+}
+
 const state = {
   program: 'off',
   segment: 0,
@@ -49,6 +102,7 @@ const el = {
   dStages:     $('d-stages'),
   dTotal:    $('d-total'),
   dSegment:  $('d-segment'),
+  screen:    $('screen'),
   play:      $('play'),
   bowl:      $('bowl'),
   striker:   $('striker'),
@@ -346,8 +400,6 @@ function freeDial(node, degPerStep, onStep) {
   });
 }
 
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-
 freeDial(el.timeDial, 6, (dir) => {
   if (state.program === 'off') return;
   state.segment = clamp(state.segment + dir * STEP, MIN_SEG, MAX_SEG);
@@ -489,18 +541,74 @@ function update() {
   render();
 }
 
-el.play.addEventListener('click', () => {
+/* ── Play, and the hold that writes a preset ─────────────────
+   One momentary switch does both jobs, as on the hardware: a press
+   starts or stops, a three-second hold stores the dials into the
+   selected program. A hold that fires swallows the release, so the
+   session never starts as a side effect of saving.
+   ───────────────────────────────────────────────────────── */
+
+let holdTimer = null;
+let heldFired = false;
+
+function pulseScreen() {
+  el.screen.classList.remove('pulse');
+  void el.screen.offsetWidth;      // reflow, so a repeat hold re-runs it
+  el.screen.classList.add('pulse');
+}
+el.screen.addEventListener('animationend', () =>
+  el.screen.classList.remove('pulse'));
+
+function beginHold() {
+  if (holdTimer) return;
+  // Only meaningful while setting up: nothing to store with the deck
+  // off, and mid-session the dials are not what you are looking at.
+  if (state.program === 'off' || state.running || state.countdown > 0) return;
+  heldFired = false;
+  holdTimer = setTimeout(() => {
+    holdTimer = null;
+    heldFired = true;
+    if (savePreset()) pulseScreen();
+  }, HOLD_MS);
+}
+
+function endHold() {
+  clearTimeout(holdTimer);
+  holdTimer = null;
+}
+
+function pressPlay() {
   audio();               // unlock on the first gesture
   if (state.running) { stop(false); return; }
   if (state.countdown > 0) { cancelCountdown(); render(); return; }
   beginCountdown();
+}
+
+el.play.addEventListener('pointerdown', beginHold);
+el.play.addEventListener('pointerup', endHold);
+el.play.addEventListener('pointercancel', endHold);
+el.play.addEventListener('pointerleave', endHold);
+
+el.play.addEventListener('click', () => {
+  if (heldFired) { heldFired = false; return; }
+  pressPlay();
 });
 
+// Space is the button: held down it saves, released it starts.
 document.addEventListener('keydown', (ev) => {
-  if (ev.code === 'Space' && ev.target === document.body) {
-    ev.preventDefault();
-    el.play.click();
-  }
+  if (ev.code !== 'Space' || ev.target !== document.body) return;
+  ev.preventDefault();
+  if (ev.repeat) return;
+  if (el.play.disabled) return;
+  beginHold();
+});
+
+document.addEventListener('keyup', (ev) => {
+  if (ev.code !== 'Space' || ev.target !== document.body) return;
+  ev.preventDefault();
+  endHold();
+  if (heldFired) { heldFired = false; return; }
+  if (!el.play.disabled) pressPlay();
 });
 
 /* ── Tick rings ──────────────────────────────────────────────
@@ -531,4 +639,5 @@ addTicks(el.stageDial, evenly(6));
 
 /* ── Boot ────────────────────────────────────────────────── */
 
+loadPresets();
 render();
