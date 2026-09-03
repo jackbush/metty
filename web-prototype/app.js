@@ -248,10 +248,12 @@ function render() {
     setSeg(el.dSegment, isOff ? '88:88' : segText, !isOff);
   }
 
-  // Top row carries stages + total only while more than one stage
-  // remains. On the last stage there is nothing left to count, so it
-  // goes dark rather than sitting there reading "1".
-  const showTop = !isOff && !counting && stagesLeft > 1;
+  // Top row carries stages + total. While setting up it is always
+  // present, so the program you have dialled in reads back in full —
+  // stages and total — before you commit to it. Once running it obeys
+  // the "more to come" rule: on the last stage there is nothing left to
+  // count, so it goes dark rather than sitting there reading "1".
+  const showTop = !isOff && !counting && (!state.running || stagesLeft > 1);
   el.scrTop.style.visibility = showTop ? 'visible' : 'hidden';
   if (showTop) {
     setSeg(el.dStages, String(stagesLeft));

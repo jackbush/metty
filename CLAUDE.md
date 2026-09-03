@@ -52,11 +52,12 @@ A reflective segment display, no backlight, no labels. Two rows:
 while running.
 
 **Top row (30%)** carries repeats remaining on the far left, total time remaining on the
-right. It appears only when more than one repeat remains — so a single-segment program
-never shows it, and during a multi-repeat session it goes dark as the last repeat
-begins. The top row exists to answer "how much more after this one?"; on the last repeat
-that question has no answer, and a row reading `1` is noise. A lit top row therefore
-always means *there is more to come*.
+right. While setting up it is always present, including for a single-repeat program: the
+dials are being read back, and what you are committing to is *this long, this many
+times*. Once the session is running it switches to answering "how much more after this
+one?" — so it goes dark as the last repeat begins, and a single-repeat session never
+shows it at all. On the last repeat that question has no answer, and a row reading `1` is
+noise. During a session, a lit top row therefore always means *there is more to come*.
 
 Repeats count **down**, not `2/4`. Mid-sit you want to know what is left, not where you
 are in a sequence.
