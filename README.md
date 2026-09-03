@@ -53,5 +53,6 @@ In both, the bell is an *instruction*: it tells you to change the object of atte
 ```
 web-prototype/   Browser prototype. Working dials, timers, synthesised bowl.
 hardware/        Arduino build plans: BOM, wiring, enclosure, firmware notes.
+COMPETITION.md   Competitive analysis: the field, the price bands, the honest weaknesses.
 tasks/           Working notes, todo, lessons.
 ```
